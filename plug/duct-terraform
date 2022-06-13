@@ -117,6 +117,8 @@ __duct_terraform_run() {
     ;;
   esac
 
+  cd "$OLDPWD" || return
+
   return $TF_RC
 }
 readonly -f __duct_terraform_run
