@@ -1,0 +1,346 @@
+# vim: set ft=sh syn=bash :
+# shellcheck shell=bash
+
+#
+# Copyright (C) 2022 Chris 'sh0shin' Frage
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License, version 3,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+
+# duct-ansible
+# Ansible operations.
+
+# Ansible working directory.
+declare -g DUCT_ANSIBLE_WORK_DIR="${DUCT_ANSIBLE_WORK_DIR:-${PWD:-.}}"
+
+# ansible venv
+
+# Ansible requirements (defaults).
+declare -a -r _DUCT_ANSIBLE_VENV_REQUIREMENTS=()
+
+# Ansible Python virtual environment path.
+declare -g DUCT_ANSIBLE_VENV_PATH="${DUCT_ANSIBLE_VENV_PATH:-"${TMPDIR:-"/tmp"}/duct-ansible-venv"}"
+
+# Create Ansible Python virtual environment.
+declare -g DUCT_ANSIBLE_VENV_CREATE="${DUCT_ANSIBLE_VENV_CREATE:-false}"
+
+# shellcheck disable=SC2206
+# Ansible requirements.
+declare -g -a DUCT_ANSIBLE_VENV_REQUIREMENTS=( ${DUCT_ANSIBLE_VENV_REQUIREMENTS[@]:-${_DUCT_ANSIBLE_VENV_REQUIREMENTS[@]}} )
+
+# deps: duct-msg duct-python
+# intl: false
+# life: main
+# desc: Activate a Python venv to be used for Ansible.
+# opts:
+__duct_ansible_venv() {
+  if [[ -n "$DUCT_ANSIBLE_VENV_PATH" ]]
+  then
+    if [[ "$DUCT_ANSIBLE_VENV_CREATE" == true ]]
+    then
+      DUCT_PYTHON_VENV_PATH="$DUCT_ANSIBLE_VENV_PATH" \
+      __duct_python_venv
+
+      # store options
+      # shellcheck disable=SC2206
+      local -a _PYTHON_PIP_REQUIREMENTS=( ${DUCT_PYTHON_PIP_REQUIREMENTS[@]} )
+
+      # shellcheck disable=SC2206
+      DUCT_PYTHON_PIP_REQUIREMENTS=( ${DUCT_ANSIBLE_VENV_REQUIREMENTS[@]} )
+
+      DUCT_PYTHON_VENV_PATH="$DUCT_ANSIBLE_VENV_PATH" \
+      __duct_python_pip
+
+      # reset options
+      # shellcheck disable=SC2206
+      DUCT_PYTHON_PIP_REQUIREMENTS=( ${_PYTHON_PIP_REQUIREMENTS[@]} )
+
+      __duct_msg n "activating $DUCT_ANSIBLE_VENV_PATH"
+
+      # shellcheck disable=SC1091
+      source "${DUCT_ANSIBLE_VENV_PATH}/bin/activate"
+
+    elif [[ -s "${DUCT_ANSIBLE_VENV_PATH}/bin/activate" ]]
+    then
+      __duct_msg n "activating $DUCT_ANSIBLE_VENV_PATH"
+
+      # shellcheck disable=SC1091
+      source "${DUCT_ANSIBLE_VENV_PATH}/bin/activate"
+    else
+      __duct_msg e "${DUCT_ANSIBLE_VENV_PATH}/bin/activate not found!"
+      return 1
+    fi
+  else
+    __duct_msg e "DUCT_ANSIBLE_VENV_PATH is unset!"
+    return 1
+  fi
+}
+readonly -f __duct_ansible_venv
+
+# ansible run
+
+# Ansible configuration file to use (inherit `ANSIBLE_CONFIG`).
+#declare -g DUCT_ANSIBLE_RUN_CONFIG="${DUCT_ANSIBLE_RUN_CONFIG:-${ANSIBLE_CONFIG:-}}"
+
+# Force color mode (inherit `ANSIBLE_FORCE_COLOR`).
+declare -g DUCT_ANSIBLE_RUN_FORCE_COLOR="${DUCT_ANSIBLE_RUN_FORCE_COLOR:-${ANSIBLE_FORCE_COLOR:-true}}"
+
+# Maximum number of Ansible forks (inherit `ANSIBLE_FORKS`).
+declare -g DUCT_ANSIBLE_RUN_FORKS="${DUCT_ANSIBLE_RUN_FORKS:-${ANSIBLE_FORKS:-5}}"
+
+# Enable/disable pipelining (inherit `ANSIBLE_PIPELINING`).
+declare -g DUCT_ANSIBLE_RUN_PIPELINING="${DUCT_ANSIBLE_RUN_PIPELINING:-${ANSIBLE_PIPELINING:-true}}"
+
+# Run `ansible-* --version` for information and debug.
+declare -g DUCT_ANSIBLE_RUN_VERSION="${DUCT_ANSIBLE_RUN_VERSION:-false}"
+
+# deps: duct-msg duct-run duct-util
+# intl: true
+# life: main
+# desc: Run ansible commands.
+# opts: <ansible-command>
+__duct_ansible_run() {
+  local ANS_CMD="${1:-}"
+  shift
+  local -a ANS_OPTS=( "$@" )
+  local ANS_RC=0
+  local ANS_BIN=""
+
+  if [[ -z "$ANS_CMD" ]]
+  then
+    __duct_msg e "no ansible command!"
+    return 1
+  fi
+
+  case "$ANS_CMD"
+  in
+    galaxy)
+      ANS_BIN="ansible-galaxy"
+    ;;
+    lint)
+      ANS_BIN="ansible-lint"
+    ;;
+    playbook)
+      ANS_BIN="ansible-playbook"
+    ;;
+    *)
+      __duct_msg e "$ANS_CMD is unsupported!"
+      return 1
+    ;;
+  esac
+
+  __duct_checkbin "$ANS_BIN"
+
+  # https://docs.ansible.com/ansible/latest/reference_appendices/config.html
+  #export ANSIBLE_CONFIG="$DUCT_ANSIBLE_RUN_CONFIG"
+  export ANSIBLE_FORCE_COLOR="$DUCT_ANSIBLE_RUN_FORCE_COLOR"
+  export ANSIBLE_FORKS="$DUCT_ANSIBLE_RUN_FORKS"
+  export ANSIBLE_PIPELINING="$DUCT_ANSIBLE_RUN_PIPELINING"
+  #...
+
+  if [[ "$DUCT_ANSIBLE_RUN_VERSION" == true ]]
+  then
+    __duct_run "$ANS_BIN" --version
+  fi
+
+  __duct_ansible_config
+
+  __duct_msg n "running $ANS_BIN"
+  __duct_run "$ANS_BIN" "${ANS_OPTS[@]}" || ANS_RC=$?
+  return $ANS_RC
+}
+readonly -f __duct_ansible_run
+
+# ansible config
+
+# Ansible configuration file name.
+declare -g DUCT_ANSIBLE_CONFIG_FILE="${DUCT_ANSIBLE_CONFIG_FILE:-ansible.cfg}"
+
+# deps:
+# intl: true
+# life: main
+# desc: Check for `ansible.cfg` in working directory and export ANSIBLE_CONFIG.
+# opts:
+__duct_ansible_config() {
+
+  if [[ -s "${DUCT_ANSIBLE_WORK_DIR}/${DUCT_ANSIBLE_CONFIG_FILE}" ]]
+  then
+    export ANSIBLE_CONFIG="${DUCT_ANSIBLE_WORK_DIR}/${DUCT_ANSIBLE_CONFIG_FILE}"
+    __duct_msg d "found $ANSIBLE_CONFIG"
+  else
+    __duct_msg d "no config found!"
+  fi
+}
+readonly -f __duct_ansible_config
+
+# ansible requirements
+
+# Requirements file for roles and collections.
+declare -g DUCT_ANSIBLE_REQUIREMENTS_FILENAME=${DUCT_ANSIBLE_REQUIREMENTS_FILENAME:-"requirements.yml"}
+
+# deps: duct-msg
+# intl: false
+# life: main
+# desc: install Ansible collections and roles from requirements file.
+# opts: [extra-options]
+__duct_ansible_requirements() {
+  local ANS_OPTS=( "$@" )
+
+  if [[ -s "$DUCT_ANSIBLE_REQUIREMENTS_FILENAME" ]]
+  then
+    __duct_checkbin ansible-galaxy
+
+    __duct_msg n "installing collections from $DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
+    __duct_run ansible-galaxy collection install "${ANS_OPTS[@]}" --upgrade -r "$DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
+
+    __duct_msg n "installing roles from $DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
+    __duct_run ansible-galaxy role install "${ANS_OPTS[@]}" -r "$DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
+  else
+    __duct_msg w "$DUCT_ANSIBLE_REQUIREMENTS_FILENAME file not found!"
+  fi
+}
+readonly -f __duct_ansible_requirements
+
+# ansible vault
+
+# Ansible vault password.
+declare -g DUCT_ANSIBLE_VAULT_PASSWORD="${DUCT_ANSIBLE_VAULT_PASSWORD:-}"
+
+# Ansible vault password file (inherit `ANSIBLE_VAULT_PASSWORD_FILE`).
+declare -g DUCT_ANSIBLE_VAULT_FILENAME="${DUCT_ANSIBLE_VAULT_FILENAME:-${ANSIBLE_VAULT_PASSWORD_FILE:-"${HOME}/.ansible/vault"}}"
+
+# Ansible vault password file mode.
+declare -g DUCT_ANSIBLE_VAULT_FILEMODE="${DUCT_ANSIBLE_VAULT_FILEMODE:-0400}"
+
+# Overwrite Ansible vault password file.
+declare -g DUCT_ANSIBLE_VAULT_OVERWRITE="${DUCT_ANSIBLE_VAULT_OVERWRITE:-false}"
+
+# deps: duct-msg duct-util
+# intl: false
+# life: main
+# desc: Create a ansible-vault password file (password can be specified base64 encoded).
+# opts:
+__duct_ansible_vault() {
+  local ANS_ERROR=0
+  local ANS_VAULT_PASSWORD
+
+  if [[ -z "$DUCT_ANSIBLE_VAULT_PASSWORD" ]]
+  then
+    __duct_msg e "DUCT_ANSIBLE_VAULT_PASSWORD is unset!"
+    (( ANS_ERROR+=1 ))
+  fi
+
+  if [[ -z "$DUCT_ANSIBLE_VAULT_FILENAME" ]]
+  then
+    __duct_msg e "DUCT_ANSIBLE_VAULT_FILE_NAME is unset!"
+    (( ANS_ERROR+=1 ))
+  fi
+
+  if [[ -z "$DUCT_ANSIBLE_VAULT_FILEMODE" ]]
+  then
+    __duct_msg e "DUCT_ANSIBLE_VAULT_FILE_MODE is unset!"
+    (( ANS_ERROR+=1 ))
+  fi
+
+  if [[ $ANS_ERROR -gt 0 ]]
+  then
+    return 1
+  fi
+
+  ANS_VAULT_PASSWORD="$( __duct_debase64 "$DUCT_ANSIBLE_VAULT_PASSWORD" )"
+
+  DUCT_SFILE_CONTENT="$ANS_VAULT_PASSWORD" \
+  DUCT_SFILE_FILENAME="$DUCT_ANSIBLE_VAULT_FILENAME" \
+  DUCT_SFILE_FILEMODE="$DUCT_ANSIBLE_VAULT_FILEMODE" \
+  DUCT_SFILE_OVERWRITE="$DUCT_ANSIBLE_VAULT_OVERWRITE" \
+  __duct_sfile
+
+  export ANSIBLE_VAULT_PASSWORD_FILE="$DUCT_ANSIBLE_VAULT_FILENAME"
+}
+readonly -f __duct_ansible_vault
+
+# ansible playbook
+
+# Ansible playbook options (defaults).
+declare -a _DUCT_ANSIBLE_PLAYBOOK_OPTIONS=(
+  --diff
+)
+
+# Ansible playbook files (defaults).
+declare -a _DUCT_ANSIBLE_PLAYBOOK_FILES=(
+  main.yml
+  site.yml
+)
+
+# Ansible playbook directory.
+declare -g DUCT_ANSIBLE_PLAYBOOK_DIR="${DUCT_ANSIBLE_PLAYBOOK_DIR:-${PWD:-.}}"
+
+# Ansible playbook files to find and run.
+declare -g -a DUCT_ANSIBLE_PLAYBOOK_FILES=( "${DUCT_ANSIBLE_PLAYBOOK_FILES[@]:-${_DUCT_ANSIBLE_PLAYBOOK_FILES[@]}}" )
+
+# Ansible playbook options.
+declare -g -a DUCT_ANSIBLE_PLAYBOOK_OPTIONS=( "${DUCT_ANSIBLE_PLAYBOOK_OPTIONS[@]:-${_DUCT_ANSIBLE_PLAYBOOK_OPTIONS[@]}}" )
+
+# deps:
+# intl: false
+# desc: run ansible-playbook with given options and file.
+# opts: [playbook-options]
+__duct_ansible_playbook() {
+  local -a ANS_OPTS=( "$@" )
+
+  local -a ANS_FILES=()
+  local ANS_ERROR=0
+  local ANS_FILE
+
+  for ANS_FILE in "${DUCT_ANSIBLE_PLAYBOOK_FILES[@]}"
+  do
+    if [[ -s "${DUCT_ANSIBLE_PLAYBOOK_DIR}/${ANS_FILE}" ]]
+    then
+      __duct_msg d "playbook '$ANS_FILE' found"
+      ANS_FILES+=( "$ANS_FILE" )
+    fi
+  done
+
+  if [[ ${#ANS_FILES[@]} -ge 1 ]]
+  then
+    __duct_ansible_run playbook "${DUCT_ANSIBLE_PLAYBOOK_OPTIONS[@]}" "${ANS_OPTS[@]}" "${ANS_FILES[@]}"
+    return
+  else
+    __duct_msg e "no playbooks found!"
+    return 1
+  fi
+}
+readonly -f __duct_ansible_playbook
+
+# ansible lint
+
+# Default Ansible lint options.
+declare -a _DUCT_ANSIBLE_LINT_OPTIONS=(
+  --force-color
+)
+
+# Ansible lint options.
+declare -g -a DUCT_ANSIBLE_LINT_OPTIONS=( "${DUCT_ANSIBLE_LINT_OPTIONS[@]:-${_DUCT_ANSIBLE_LINT_OPTIONS[@]}}" )
+
+# deps: duct-msg duct-run
+# intl: false
+# life: developement
+# desc: Run Ansible linting
+# opts: [extra-options]
+__duct_ansible_lint() {
+  local -a ANS_OPTS=( "$@" )
+
+  __duct_ansible_run lint "${DUCT_ANSIBLE_LINT_OPTIONS[@]}" "${ANS_OPTS[@]}"
+  return
+}
+readonly -f __duct_ansible_lint

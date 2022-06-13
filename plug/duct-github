@@ -1,0 +1,263 @@
+# vim: set ft=sh syn=bash :
+# shellcheck shell=bash
+
+#
+# Copyright (C) 2022 Chris 'sh0shin' Frage
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License, version 3,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+
+# duct-github
+# GitHub operations.
+
+# Set to `true` when GitHub pipeline is detected (inherit `GITHUB_ACTIONS` variable).
+declare -g -x DUCT_GITHUB_PIPELINE="${GITHUB_ACTIONS:-false}"
+
+# GitHub username, commonly unused with token (inherit `GITHUB_USER`).
+declare -g DUCT_GITHUB_USER="${DUCT_GITHUB_USER:-${GITHUB_USER:-"git"}}"
+
+# GitHub token, base64 encoding is supported (inherit `GITHUB_TOKEN`).
+declare -g DUCT_GITHUB_TOKEN="${DUCT_GITHUB_TOKEN:-${GITHUB_TOKEN:-}}"
+
+# Github API URL.
+declare -g DUCT_GITHUB_API_URL="${DUCT_GITHUB_API_URL:-"https://api.github.com"}"
+
+# github curl
+
+# GitHub URL(s) to curl (defaults).
+declare -a _DUCT_GITHUB_CURL_URL=()
+
+# shellcheck disable=SC2206
+# GitHub URL(s) to curl.
+declare -g -a DUCT_GITHUB_CURL_URL=( ${DUCT_GITHUB_CURL_URL[@]:-${_DUCT_GITHUB_CURL_URL[@]}} )
+
+# deps: duct-curl duct-msg
+# intl: false
+# life: main
+# desc: Run `duct curl` with set GitHub token (using `DUCT_GITHUB_USER` and `DUCT_GITHUB_TOKEN`).
+# opts: <url>
+__duct_github_curl() {
+  local -a GH_URL=( "${DUCT_GITHUB_CURL_URL[@]:-$@}" )
+
+  local -a GH_CURL_OPTS=(
+    --header "Accept: application/vnd.github.v3+json"
+  )
+  local GH_RC=0
+  local GH_WARN=0
+
+  if [[ -z "$DUCT_GITHUB_USER" ]]
+  then
+    __duct_msg w "DUCT_GITHUB_USER is unset!"
+    (( GH_WARN+=1 ))
+  fi
+
+  if [[ -z "$DUCT_GITHUB_TOKEN" ]]
+  then
+    __duct_msg w "DUCT_GITHUB_TOKEN is unset!"
+    (( GH_WARN+= 1 ))
+  fi
+
+  if [[ "$GH_WARN" -eq 0 ]]
+  then
+    _GH_TOKEN="$( __duct_debase64 "$DUCT_GITHUB_TOKEN" )"
+    GH_CURL_OPTS+=( "-u ${DUCT_GITHUB_USER}:${_GH_TOKEN}" )
+    unset _GH_TOKEN
+  fi
+  __duct_curl "${GH_CURL_OPTS[@]}" "${GH_URL[@]}" || GH_RC=$?
+  return $GH_RC
+}
+readonly -f __duct_github_curl
+
+# github latest
+
+# Exported variable with latest version found.
+declare -g -x DUCT_GITHUB_LATEST_VERSION=""
+
+# GitHub namespace to search latest version.
+declare -g DUCT_GITHUB_LATEST_NAMESPACE=""
+
+# Get a fixed release version instead of latest.
+declare -g DUCT_GITHUB_LATEST_RELEASE=""
+
+# Exported variable with latest version url.
+declare -g -x DUCT_GITHUB_LATEST_URL=""
+
+# Exported asset download URL matching running OS and arch.
+declare -g -x DUCT_GITHUB_LATEST_ASSET=""
+
+# deps: duct-msg duct-utils
+# intl: false
+# life: main
+# desc: Fetch latest version from GitHub.
+# opts: [github-namespace] [release]
+__duct_github_latest() {
+  local GH_NAMESPACE="${1:-${DUCT_GITHUB_LATEST_NAMESPACE}}"
+  local GH_RELEASE="${2:-${DUCT_GITHUB_LATEST_RELEASE}}"
+
+  local -a GH_REL_ASSETS=()
+  local GH_REL_ASSET
+  local GH_REL_DATA
+  local GH_REL_NAME
+  local GH_TAG_DATA
+  local GH_TAG_NAME
+
+  local GH_ERROR=0
+
+  if [[ -z "$GH_RELEASE" ]] || [[ "$GH_RELEASE" == "latest" ]]
+  then
+    GH_RELEASE="latest"
+  else
+    GH_RELEASE="tags/${GH_RELEASE}"
+  fi
+
+  GH_REL_DATA="$( DUCT_RUN_SIMULATE=false __duct_github_curl "${DUCT_GITHUB_API_URL}/repos/${GH_NAMESPACE}/releases/${GH_RELEASE}" )"
+  GH_TAG_DATA="$( DUCT_RUN_SIMULATE=false __duct_github_curl "${DUCT_GITHUB_API_URL}/repos/${GH_NAMESPACE}/tags" )"
+
+  GH_REL_NAME=$( echo "$GH_REL_DATA" | jq -M -r '.tag_name' 2>/dev/null || : )
+  GH_TAG_NAME=$( echo "$GH_TAG_DATA" | jq -M -r '.[].name' | sort -Vr | head -n1 2>/dev/null || : )
+
+  if [[ -n "$GH_REL_NAME" ]] && [[ "$GH_REL_NAME" != "null" ]]
+  then
+    __duct_msg n "found $GH_NAMESPACE release $GH_REL_NAME"
+
+    DUCT_GITHUB_LATEST_VERSION="$GH_REL_NAME"
+    DUCT_GITHUB_LATEST_URL="$( echo "$GH_REL_DATA" | jq -M -r '.html_url' )"
+
+    readarray -t GH_REL_ASSETS < <( printf "%s\n" "$GH_REL_DATA" | jq -M -r '.assets[].browser_download_url' )
+
+    _HOSTTYPE_COMMON="($( __duct_joinarray "|" "${DUCT_HOSTTYPE_COMMON[@]}" ))"
+    for GH_REL_ASSET in "${GH_REL_ASSETS[@]}"
+    do
+      if [[ "$GH_REL_ASSET" =~ $DUCT_OSTYPE ]] && [[ "$GH_REL_ASSET" =~ $_HOSTTYPE_COMMON ]]
+      then
+        __duct_msg d "found asset $GH_REL_ASSET"
+        DUCT_GITHUB_LATEST_ASSET="$GH_REL_ASSET"
+      fi
+    done
+    unset _HOSTTYPE_COMMON
+
+    if [[ -z "$DUCT_GITHUB_LATEST_ASSET" ]]
+    then
+      __duct_msg w "no downloadable asset found!"
+    fi
+  fi
+
+  if [[ -z "$GH_REL_NAME" ]] || [[ "$GH_REL_NAME" == "null" ]]
+  then
+    __duct_msg e "no $GH_NAMESPACE release information!"
+    __duct_msg d "$GH_REL_DATA"
+    (( GH_ERROR+=1 ))
+
+    if [[ -n "$GH_TAG_NAME" ]]
+    then
+      __duct_msg n "found $GH_NAMESPACE latest tag $GH_TAG_NAME"
+
+      DUCT_GITHUB_LATEST_VERSION="$GH_TAG_NAME"
+      DUCT_GITHUB_LATEST_URL="https://github.com/${GH_NAMESPACE}"
+    else
+      __duct_msg e "no $GH_NAMESPACE tag information!"
+      __duct_msg d "$GH_TAG_DATA"
+      (( GH_VER_ERROR+=1 ))
+    fi
+
+    if [[ "$GH_ERROR" -ge 2 ]]
+    then
+      return 1
+    fi
+  fi
+
+  echo "$DUCT_GITHUB_LATEST_VERSION"
+}
+readonly -f __duct_github_latest
+
+# github install
+
+# Install temporary directory.
+declare -g DUCT_GITHUB_INSTALL_TMPDIR="${TMPDIR:-"/tmp"}"
+
+# Installation destination directory.
+declare -g DUCT_GITHUB_INSTALL_DIR="/usr/local/bin"
+
+# Mode to set on installed file.
+declare -g DUCT_GITHUB_INSTALL_MODE=0755
+
+# GitHub namespace to install from.
+declare -g DUCT_GITHUB_INSTALL_NAMESPACE=""
+
+# Optional version to install (using `duct github latest`).
+declare -g DUCT_GITHUB_INSTALL_VERSION=""
+
+# Optional asset/archive URL to install from.
+declare -g DUCT_GITHUB_INSTALL_ASSET=""
+
+# Map of files to install source:destination
+declare -g -a DUCT_GITHUB_INSTALL_FILE_MAP=()
+
+# deps: duct-msg duct-utils
+# intl: false
+# life: main
+# desc: Install GitHub binary releases.
+# opts:
+__duct_github_install() {
+  local GH_ERROR=0
+  local GH_ASSET
+  local GH_RC=0
+
+  if [[ -z "$DUCT_GITHUB_INSTALL_NAMESPACE" ]]
+  then
+    __duct_msg e "no namespace!"
+    (( GH_ERROR+=1 ))
+  fi
+
+  if [[ "${#DUCT_GITHUB_INSTALL_FILE_MAP[@]}" -eq 0 ]]
+  then
+    __duct_msg e "no files to install!"
+    (( GH_ERROR+=1 ))
+  fi
+
+  if [[ "$GH_ERROR" -gt 0 ]]
+  then
+    return 1
+  fi
+
+  if [[ -z "$DUCT_GITHUB_INSTALL_VERSION" ]]
+  then
+    __duct_github_latest "$DUCT_GITHUB_INSTALL_NAMESPACE" >/dev/null
+  else
+    __duct_github_latest "$DUCT_GITHUB_INSTALL_NAMESPACE" "$DUCT_GITHUB_INSTALL_VERSION" >/dev/null
+  fi
+
+  if [[ -n "$DUCT_GITHUB_LATEST_ASSET" ]]
+  then
+    DUCT_GITHUB_INSTALL_ASSET="$DUCT_GITHUB_LATEST_ASSET"
+  fi
+
+  if [[ -z "$DUCT_GITHUB_INSTALL_ASSET" ]]
+  then
+    __duct_msg e "no asset!"
+    return 1
+  fi
+
+  GH_ASSET="$( __duct_basename "$DUCT_GITHUB_INSTALL_ASSET" )"
+
+  __duct_github_curl "$DUCT_GITHUB_INSTALL_ASSET" -o "${DUCT_GITHUB_INSTALL_TMPDIR}/${GH_ASSET}" || GH_RC=$?
+
+  if [[ $GH_RC -gt 0 ]]
+  then
+    __duct_msg e "error downloading $DUCT_GITHUB_INSTALL_ASSET"
+    return $GH_RC
+  fi
+
+ __duct_unpack "${DUCT_GITHUB_INSTALL_TMPDIR}/${GH_ASSET}" "$DUCT_GITHUB_INSTALL_DIR" "$DUCT_GITHUB_INSTALL_MODE" "${DUCT_GITHUB_INSTALL_FILE_MAP[@]}"
+}
+readonly -f __duct_github_install

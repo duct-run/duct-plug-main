@@ -1,0 +1,558 @@
+# vim: set ft=sh syn=bash :
+# shellcheck shell=bash
+
+#
+# Copyright (C) 2022 Chris 'sh0shin' Frage
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License, version 3,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+
+# duct-gitlab
+# GitLab operations.
+
+# Set to `true` when a GitLab pipeline is detected (inherit `GITLAB_CI`).
+declare -g -x DUCT_GITLAB_PIPELINE=${GITLAB_CI:-false}
+
+# GitLab username (inherit `GITLAB_USER` or `GITLAB_USER_LOGIN` if available).
+declare -g DUCT_GITLAB_USER=${DUCT_GITLAB_USER:-${GITLAB_USER:-${GITLAB_USER_LOGIN:-}}}
+
+# GitLab token, base64 encoding is supported (inherit `GITLAB_TOKEN` or `CI_JOB_TOKEN` if available).
+declare -g DUCT_GITLAB_TOKEN="${GITLAB_TOKEN:-"${CI_JOB_TOKEN:-""}"}"
+
+# GitLab server URL (inherit `GITLAB_SERVER` or `CI_SERVER_URL` if available).
+declare -g DUCT_GITLAB_SERVER="${GITLAB_SERVER:-"${CI_SERVER_URL:-"https://gitlab.com"}"}"
+
+# GitLab API URL (inherit `CI_API_V4_URL` if available).
+declare -g DUCT_GITLAB_API="${CI_API_V4_URL:-"${DUCT_GITLAB_SERVER}/api/v4"}"
+
+# gitlab git config
+
+# deps: duct-git duct-msg
+# intl: false
+# life: devel
+# desc: Set git configuration with GitLab.
+# opts:
+__duct_gitlab_git_config() {
+  if [[ "$DUCT_GITLAB_PIPELINE" == true ]]
+  then
+    __duct_msg d "running in pipeline mode"
+  fi
+}
+readonly -f __duct_gitlab_git_config
+
+# gitlab init
+
+# deps: duct-msg duct-utils
+# intl: true
+# life: main
+# desc: Initial GitLab settings.
+# opts:
+__duct_gitlab_init() {
+
+  __duct_urlinfo "$DUCT_GITLAB_API"
+
+  if [[ ! "${DUCT_URLINFO["scheme"]}://${DUCT_URLINFO["host"]}" =~ $DUCT_GITLAB_SERVER ]]
+  then
+    __duct_msg d "setting DUCT_GITLAB_API to match DUCT_GITLAB_SERVER=$DUCT_GITLAB_SERVER"
+    DUCT_GITLAB_API="${DUCT_GITLAB_SERVER}/${DUCT_URLINFO["path"]}"
+  fi
+}
+readonly -f __duct_gitlab_init
+
+# gitlab curl
+
+# deps: duct-curl
+# intl: false
+# life: main
+# desc: Run `duct curl` with GitLab token header (uses `DUCT_GITLAB_TOKEN` (will be masked)).
+# options: <url(s)>
+__duct_gitlab_curl() {
+  local -a GL_URL=( "$@" )
+
+  local -a GL_CURL_OPTS=()
+  local GL_RC=0
+  local GL_TOKEN
+  local GL_WARN=0
+
+  if [[ -z "$DUCT_GITLAB_TOKEN" ]]
+  then
+    __duct_msg w "DUCT_GITLAB_TOKEN is unset!"
+    (( GL_WARN+= 1 ))
+  fi
+
+  if [[ "$GL_WARN" -eq 0 ]]
+  then
+    GL_TOKEN=$( __duct_debase64 "$DUCT_GITLAB_TOKEN" )
+    GL_CURL_OPTS+=( --header "PRIVATE-TOKEN: ${GL_TOKEN}" )
+  fi
+
+  __duct_curl "${GL_CURL_OPTS[@]}" "${GL_URL[@]}" || GL_RC=$?
+  return $GL_RC
+}
+readonly -f __duct_gitlab_curl
+
+# gitlab projects
+
+# deps: duct-msg duct-utils
+# intl: false
+# life: main
+# desc: return GitLab projects clone-url or ID.
+# opts: <ssh|http|id> [search] [filter]
+__duct_gitlab_projects() {
+  local GL_RETURN="${1:-"http"}"
+  local GL_SEARCH="${2:-""}"
+  local GL_FILTER="${3:-""}"
+
+  local GL_ERROR=0
+  local GL_HEADER_FILE
+  local GL_PER_PAGE=100
+
+  GL_HEADER_FILE="$( __duct_tmpgen gitlab-curl- )"
+
+  local GL_ID_AFTER=1
+  local GL_API_QUERY="projects?search=${GL_SEARCH}&pagination=keyset&per_page=${GL_PER_PAGE}&order_by=id&sort=asc&simple=true&id_after=${GL_ID_AFTER}"
+  local -a GL_RESULT=()
+  local GL_JQ
+
+  if [[ -z "$DUCT_GITLAB_SERVER" ]]
+  then
+    __duct_msg w "DUCT_GITLAB_SERVER is unset!"
+    (( GL_ERROR+=1 ))
+  fi
+
+  __duct_gitlab_init
+
+  if [[ "$GL_RETURN" == "http" ]]
+  then
+    GL_JQ='.[].http_url_to_repo'
+  elif [[ "$GL_RETURN" == "ssh" ]]
+  then
+    GL_JQ='.[].ssh_url_to_repo'
+  elif [[ "$GL_RETURN" == "id" ]]
+  then
+    GL_JQ='.[] | (.id|tostring) + ":" + .path'
+  else
+    __duct_msg e "$GL_RETURN unknown!"
+    return 1
+  fi
+
+  while true
+  do
+    readarray -t -O "${#GL_RESULT[@]}" GL_RESULT < <( __duct_gitlab_curl --dump-header "$GL_HEADER_FILE" "${DUCT_GITLAB_API}/${GL_API_QUERY}" | jq -r "$GL_JQ" )
+
+    GL_ID_AFTER=$( __duct_gnu_grep -Po 'id_after=[0-9]+' "$GL_HEADER_FILE" ) || break
+    GL_API_QUERY="${GL_API_QUERY//id_after=*/${GL_ID_AFTER}}"
+    __duct_msg d "results ${#GL_RESULT[@]}"
+  done
+  __duct_run rm -f "${GL_HEADER_FILE:?}"
+  __duct_msg d "applying filter '$GL_FILTER'"
+
+  for RESULT in "${GL_RESULT[@]}"
+  do
+    if [[ -n "$GL_FILTER" ]]
+    then
+      if [[ "$RESULT" =~ $GL_FILTER ]]
+      then
+        echo "$RESULT"
+      else
+        continue
+      fi
+    else
+
+      if [[ "$GL_RETURN" == "id" ]]
+      then
+        _ID="${RESULT%%:*}"
+        _SEARCH="${RESULT#*:}"
+
+        if [[ "$GL_SEARCH" == "$_SEARCH" ]]
+        then
+          echo "$_ID"
+          continue
+        fi
+
+      else
+        echo "$RESULT"
+      fi
+
+    fi
+  done
+}
+readonly -f __duct_gitlab_projects
+
+# gitlab milestone
+
+declare -a -r _DUCT_GITLAB_MILESTONE_DESCRIPTION=()
+
+declare -g DUCT_GITLAB_MILESTONE_PROJECT_ID="${DUCT_GITLAB_MILESTONE_PROJECT_ID:-${CI_PROJECT_ID:-}}"
+
+declare -g DUCT_GITLAB_MILESTONE_GROUP_ID="${DUCT_GITLAB_MILESTONE_GROUP_ID:-}"
+
+declare -g DUCT_GITLAB_MILESTONE_TITLE="${DUCT_GITLAB_MILESTONE_TITLE:-}"
+
+declare -g -a DUCT_GITLAB_MILESTONE_DESCRIPTION=( ${DUCT_GITLAB_MILESTONE_DESCRIPTION[@]:-${_DUCT_GITLAB_MILESTONE_DESCRIPTION[@]}} )
+
+declare -g DUCT_GITLAB_MILESTONE_START_DATE="${DUCT_GITLAB_MILESTONE_START_DATE:-}"
+
+declare -g DUCT_GITLAB_MILESTONE_DUE_DATE="${DUCT_GITLAB_MILESTONE_DUE_DATE:-}"
+
+# deps:
+# intl:
+# life: devel
+# desc: ...
+# opts:
+__duct_gitlab_milestone() {
+  local -a MILESTONE_BODY=()
+
+  local MILESTONE_DATA
+  local MILESTONE_IID
+  local MILESTONE_INFO
+  local MILESTONE_SEND
+
+  local MILESTONE_RC=0
+  local IFS
+
+  # mandatory
+  # prefer group id
+  if [[ -z "$DUCT_GITLAB_MILESTONE_GROUP_ID" ]]
+  then
+    if [[ -z "$DUCT_GITLAB_MILESTONE_PROJECT_ID" ]]
+    then
+      __duct_msg e "no project id!"
+      (( MILESTONE_RC+=1 ))
+    else
+      MILESTONE_BODY+=( "id:$DUCT_GITLAB_MILESTONE_PROJECT_ID" )
+    fi
+  else
+    MILESTONE_BODY+=( "id:$DUCT_GITLAB_MILESTONE_GROUP_ID" )
+  fi
+
+  if [[ -z "$DUCT_GITLAB_MILESTONE_TITLE" ]]
+  then
+    __duct_msg e "no title!"
+    (( MILESTONE_RC+=1 ))
+  else
+    MILESTONE_BODY+=( "title:$DUCT_GITLAB_MILESTONE_TITLE" )
+  fi
+
+  if [[ -z "${DUCT_GITLAB_MILESTONE_DESCRIPTION[*]}" ]]
+  then
+    __duct_msg e "no description!"
+    (( MILESTONE_RC+=1 ))
+  else
+    IFS="" MILESTONE_BODY+=( "description:${DUCT_GITLAB_MILESTONE_DESCRIPTION[*]}" )
+  fi
+
+  if [[ -z "$DUCT_GITLAB_MILESTONE_START_DATE" ]]
+  then
+    __duct_msg e "no start date!"
+    (( MILESTONE_RC+=1 ))
+  else
+    MILESTONE_BODY+=( "start_date:$DUCT_GITLAB_MILESTONE_START_DATE" )
+  fi
+
+  if [[ -z "$DUCT_GITLAB_MILESTONE_DUE_DATE" ]]
+  then
+    __duct_msg e "no due date!"
+    (( MILESTONE_RC+=1 ))
+  else
+    MILESTONE_BODY+=( "due_date:$DUCT_GITLAB_MILESTONE_DUE_DATE" )
+  fi
+
+  if [[ "$MILESTONE_RC" -gt 0 ]]
+  then
+    return 1
+  fi
+
+  # optional
+  unset IFS
+
+  MILESTONE_DATA="$( __duct_array2json "${MILESTONE_BODY[@]}" )"
+  echo "$MILESTONE_DATA"
+  return 0
+
+}
+readonly -f __duct_gitlab_milestone
+
+# gitlab issue
+
+declare -a -r _DUCT_GITLAB_ISSUE_DESCRIPTION=()
+
+declare -a -r _DUCT_GITLAB_ISSUE_LABELS=()
+
+declare -g DUCT_GITLAB_ISSUE_PROJECT_ID="${DUCT_GITLAB_ISSUE_PROJECT_ID:-${CI_PROJECT_ID:-}}"
+
+declare -g DUCT_GITLAB_ISSUE_TITLE="${DUCT_GITLAB_ISSUE_TITLE:-}"
+
+declare -g -a DUCT_GITLAB_ISSUE_DESCRIPTION=( ${DUCT_GITLAB_ISSUE_DESCRIPTION[@]:-${_DUCT_GITLAB_ISSUE_DESCRIPTION[@]}} )
+
+declare -g -a DUCT_GITLAB_ISSUE_LABELS=( ${DUCT_GITLAB_ISSUE_LABELS[@]:-${_DUCT_GITLAB_ISSUE_LABELS[@]}} )
+
+declare -g DUCT_GITLAB_ISSUE_MILESTONE_ID="${DUCT_GITLAB_ISSUE_MILESTONE_ID:-}"
+
+# deps: duct-util
+# intl: false
+# life: devel
+# desc: ...
+# opts:
+__duct_gitlab_issue() {
+  local -a ISSUE_BODY=()
+
+  local ISSUE_DATA
+  local ISSUE_IID
+  local ISSUE_INFO
+  local ISSUE_SEND
+
+  local ISSUE_RC=0
+  local IFS
+
+  # mandatory
+  if [[ -z "$DUCT_GITLAB_ISSUE_PROJECT_ID" ]]
+  then
+    __duct_msg e "no project id!"
+    (( ISSUE_RC+=1 ))
+  else
+    ISSUE_BODY+=( "id:$DUCT_GITLAB_ISSUE_PROJECT_ID" )
+  fi
+
+  if [[ -z "$DUCT_GITLAB_ISSUE_TITLE" ]]
+  then
+    __duct_msg e "no title!"
+    (( ISSUE_RC+=1 ))
+  else
+    ISSUE_BODY+=( "title:$DUCT_GITLAB_ISSUE_TITLE" )
+  fi
+
+  if [[ -z "${DUCT_GITLAB_ISSUE_DESCRIPTION[*]}" ]]
+  then
+    __duct_msg e "no description!"
+    (( ISSUE_RC+=1 ))
+  else
+    IFS="" ISSUE_BODY+=( "description:${DUCT_GITLAB_ISSUE_DESCRIPTION[*]}" )
+  fi
+
+  if [[ "$ISSUE_RC" -gt 0 ]]
+  then
+    return 1
+  fi
+
+  # optional
+  if [[ -n "${DUCT_GITLAB_ISSUE_LABELS[*]}" ]]
+  then
+    IFS="," ISSUE_BODY+=( "labels:[${DUCT_GITLAB_ISSUE_LABELS[*]}]" )
+  fi
+
+  if [[ -n "$DUCT_GITLAB_ISSUE_MILESTONE_ID" ]]
+  then
+    ISSUE_BODY+=( "milestone_id:$DUCT_GITLAB_ISSUE_MILESTONE_ID" )
+  fi
+
+  unset IFS
+
+  ISSUE_DATA="$( __duct_array2json "${ISSUE_BODY[@]}" )"
+  echo "$ISSUE_DATA"
+  return 0
+
+}
+readonly -f __duct_gitlab_issue
+
+# gitlab merge request
+
+# Description of the merge request (defaults).
+declare -a -r _DUCT_GITLAB_MERGE_REQUEST_DESCRIPTION=()
+
+# Labels for the merge request (optional defaults).
+declare -a -r _DUCT_GITLAB_MERGE_REQUEST_LABELS=()
+
+# Project ID to create merge request for (inherit `CI_PROJECT_ID` if available).
+declare -g DUCT_GITLAB_MERGE_REQUEST_PROJECT_ID="${DUCT_GITLAB_MERGE_REQUEST_PROJECT_ID:-${CI_PROJECT_ID:-}}"
+
+# Source branch for the merge request.
+declare -g DUCT_GITLAB_MERGE_REQUEST_SOURCE_BRANCH="${DUCT_GITLAB_MERGE_REQUEST_SOURCE_BRANCH:-}"
+
+# Target branch for the merge request.
+declare -g DUCT_GITLAB_MERGE_REQUEST_TARGET_BRANCH="${DUCT_GITLAB_MERGE_REQUEST_TARGET_BRANCH:-}"
+
+# Title of the merge request.
+declare -g DUCT_GITLAB_MERGE_REQUEST_TITLE="${DUCT_GITLAB_MERGE_REQUEST_TITLE:-}"
+
+# shellcheck disable=SC2206
+# Description of the merge request (optional).
+declare -g -a DUCT_GITLAB_MERGE_REQUEST_DESCRIPTION=( ${DUCT_GITLAB_MERGE_REQUEST_DESCRIPTION[@]:-${_DUCT_GITLAB_MERGE_REQUEST_DESCRIPTION[@]}} )
+
+# shellcheck disable=SC2206
+# Labels for the merge request (optional).
+declare -g -a DUCT_GITLAB_MERGE_REQUEST_LABELS=( ${DUCT_GITLAB_MERGE_REQUEST_LABELS[@]:-${_DUCT_GITLAB_MERGE_REQUEST_LABELS[@]}} )
+
+# Remove source branch after merge.
+declare -g DUCT_GITLAB_MERGE_REQUEST_REMOVE_SOURCE="${DUCT_GITLAB_MERGE_REQUEST_REMOVE_SOURCE:-true}"
+
+# Milestone ID to link with.
+declare -g DUCT_GITLAB_MERGE_REQUEST_MILESTONE_ID="${DUCT_GITLAB_MERGE_REQUEST_MILESTONE_ID:-}"
+
+# deps: duct-msg duct-util
+# intl: false
+# life: devel
+# desc: Create a GitLab Merge request.
+# opts:
+__duct_gitlab_merge_request() {
+  local -a MR_BODY=()
+
+  local MR_DATA
+  local MR_IID
+  local MR_INFO
+  local MR_SEND
+
+  local MR_RC=0
+  local IFS
+
+  # mandatory
+  if [[ -z "$DUCT_GITLAB_MERGE_REQUEST_PROJECT_ID" ]]
+  then
+    __duct_msg e "no project id!"
+    (( MR_RC+=1 ))
+  else
+    MR_BODY+=( "id:$DUCT_GITLAB_MERGE_REQUEST_PROJECT_ID" )
+  fi
+
+  if [[ -z "$DUCT_GITLAB_MERGE_REQUEST_TITLE" ]]
+  then
+    __duct_msg e "no title!"
+  else
+    MR_BODY+=( "title:$DUCT_GITLAB_MERGE_REQUEST_TITLE" )
+  fi
+
+  if [[ -z "$DUCT_GITLAB_MERGE_REQUEST_SOURCE_BRANCH" ]]
+  then
+    __duct_msg e "no source branch!"
+    (( MR_RC+=1 ))
+  else
+    MR_BODY+=( "source_branch:$DUCT_GITLAB_MERGE_REQUEST_SOURCE_BRANCH" )
+  fi
+
+  if [[ -z "$DUCT_GITLAB_MERGE_REQUEST_TARGET_BRANCH" ]]
+  then
+    __duct_msg e "no target branch!"
+    (( MR_RC+=1 ))
+  else
+    MR_BODY+=( "target_branch:$DUCT_GITLAB_MERGE_REQUEST_TARGET_BRANCH" )
+  fi
+
+  if [[ "$MR_RC" -gt 1 ]]
+  then
+    return 1
+  fi
+
+  # optional
+  if [[ -n "${DUCT_GITLAB_MERGE_REQUEST_DESCRIPTION[*]}" ]]
+  then
+    IFS="" MR_BODY+=( "description:${DUCT_GITLAB_MERGE_REQUEST_DESCRIPTION[*]}" )
+  fi
+
+  if [[ -n "${DUCT_GITLAB_MERGE_REQUEST_LABELS[*]}" ]]
+  then
+    IFS="," MR_BODY+=( "labels:[${DUCT_GITLAB_MERGE_REQUEST_LABELS[*]}]" )
+  fi
+
+  if [[ -n "$DUCT_GITLAB_MERGE_REQUEST_MILESTONE_ID" ]]
+  then
+    MR_BODY+=( "milestone_id:$DUCT_GITLAB_MERGE_REQUEST_MILESTONE_ID" )
+  fi
+
+  unset IFS
+
+  MR_DATA="$( __duct_array2json "${MR_BODY[@]}" )"
+  echo "$MR_DATA"
+  return 0
+
+  MR_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_MERGE_REQUEST_PROJECT_ID}/merge_requests?state=opened" )"
+
+  MR_INFO="$( jq -r '.[] | .source_branch + ":" + .web_url' <<< "$MR_INFO" )"
+
+  for INFO in $MR_INFO
+  do
+    SRC="${INFO%%:*}"
+    URL="${INFO#*:}"
+
+    if [[ "$SRC" == "$DUCT_GITLAB_MERGE_REQUEST_SOURCE_BRANCH" ]]
+    then
+      __duct_msg n "exists $URL"
+      return 0
+    fi
+  done
+
+  MR_SEND="$( __duct_gitlab_curl --request POST \
+              --header "Content-Type: application/json" \
+              --data "$MR_DATA" \
+              "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_MERGE_REQUEST_PROJECT_ID}/merge_requests" )"
+
+  MR_IID="$( echo "$MR_SEND" | jq -r '.iid' )"
+  MR_URL="$( echo "$MR_SEND" | jq -r '.web_url' )"
+
+  __duct_msg n "created $MR_URL"
+  echo "$MR_IID"
+}
+readonly -f __duct_gitlab_merge_request
+
+__duct_array2json() {
+  local -a ARRAY=( "$@" )
+
+  local I
+  local JSON_KEY
+  local JSON_VAL
+
+  local _JSON_VAL
+  local _VAL
+
+  if [[ "${#ARRAY[@]}" -eq 0 ]]
+  then
+    __duct_msg e "no values!"
+    return 1
+  fi
+
+  printf '%s\n' "{"
+  for (( I=0;  I<=${#ARRAY[@]}-1; I++ ))
+  do
+    JSON_KEY="${ARRAY[$I]%%:*}"
+    JSON_VAL="${ARRAY[$I]#*:}"
+
+    # number
+    if [[ "$JSON_VAL" =~ [[:digit:]] ]]
+    then
+      printf '  "%s": %s' "$JSON_KEY" "$JSON_VAL"
+
+    # list
+    elif [[ "$JSON_VAL" =~ \[(.*)\] ]]
+    then
+      IFS="," read -r -a _JSON_VAL <<< "${BASH_REMATCH[1]}"
+
+      printf '  "%s": [ ' "$JSON_KEY"
+
+      _VAL=$( printf '"%s", ' "${_JSON_VAL[@]}" )
+
+      printf '%s' "${_VAL::-2}"
+      printf ' ]'
+    # string
+    else
+      printf '  "%s": "%s"' "$JSON_KEY" "$JSON_VAL"
+    fi
+
+    if [[ "$I" -lt "${#ARRAY[@]}-1" ]]
+    then
+      printf ',\n'
+    else
+      printf '\n'
+    fi
+  done
+  printf '%s\n' "}"
+}
+readonly -f __duct_array2json
