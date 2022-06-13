@@ -28,6 +28,9 @@ declare -g DUCT_TERRAFORM_REGISTRY_URL="https://registry.terraform.io"
 
 # terraform run
 
+# Terraform working directory.
+declare -g DUCT_TERRAFORM_RUN_WORKDIR="${DUCT_TERRAFORM_RUN_WORKDIR:-$PWD}"
+
 # Terraform output file for parsing.
 declare -g DUCT_TERRAFORM_RUN_OUTPUT="${DUCT_TERRAFORM_RUN_OUTPUT:-"terraform.out"}"
 
@@ -59,6 +62,9 @@ __duct_terraform_run() {
     __duct_msg e "no terraform command!"
     return 1
   fi
+
+  duct msg d "using workdir $DUCT_TERRAFORM_RUN_WORKDIR"
+  cd "$DUCT_TERRAFORM_RUN_WORKDIR" || return
 
   case "$TF_CMD"
   in
