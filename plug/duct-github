@@ -138,6 +138,11 @@ __duct_github_latest() {
     _HOSTTYPE_COMMON="($( __duct_joinarray "|" "${DUCT_HOSTTYPE_COMMON[@]}" ))"
     for GH_REL_ASSET in "${GH_REL_ASSETS[@]}"
     do
+      if [[ "$GH_REL_ASSET" =~ \.(sig|txt|sum)$ ]]
+      then
+        continue
+      fi
+
       if [[ "$GH_REL_ASSET" =~ $DUCT_OSTYPE ]] && [[ "$GH_REL_ASSET" =~ $_HOSTTYPE_COMMON ]]
       then
         __duct_msg d "found asset $GH_REL_ASSET"
