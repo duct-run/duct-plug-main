@@ -791,3 +791,65 @@ __duct_terraform_fail() {
   fi
 }
 readonly -f __duct_terraform_fail
+
+# terraform is
+
+# Terraform files for a standard module structure (defaults).
+declare -a -r _DUCT_TERRAFORM_IS_MODULE=(
+  main.tf
+  outputs.tf
+  variables.tf
+)
+
+# Terraform files for a standard deployment structure (defaults).
+declare -a -r _DUCT_TERRAFORM_IS_DEPLOYMENT=(
+  main.tf
+)
+
+# Terraform path to check.
+declare -g DUCT_TERRAFORM_IS_PATH="${DUCT_TERRAFORM_IS_PATH:-$PWD}"
+
+# Terraform files for a standard module structure.
+declare -g -a DUCT_TERRAFORM_IS_MODULE=( "${DUCT_TERRAFORM_IS_MODULE[@]:-${_DUCT_TERRAFORM_IS_MODULE[@]}}" )
+
+# Terraform files for a standard deployment structure.
+declare -g -a DUCT_TERRAFORM_IS_DEPLOYMENT=( "${DUCT_TERRAFORM_IS_DEPLOYMENT[@]:-${_DUCT_TERRAFORM_IS_DEPLOYMENT[@]}}" )
+
+# Terraform is (set at run-time).
+declare -g -x DUCT_TERRAFORM_IS=""
+
+# deps: duct-msg duct-util
+# intl: false
+# life: main
+# desc: Check path for Terraform type (module or deployment).
+# opts: [terraform-path]
+__duct_terraform_is() {
+  local TF_DIR="${1:-$DUCT_TERRAFORM_IS_PATH}"
+  local TF_IS
+
+  __duct_msg d "is module"
+  TF_IS=$( __duct_find_count "$TF_DIR" "${DUCT_TERRAFORM_IS_MODULE[@]}" )
+  if [[ "${#DUCT_TERRAFORM_IS_MODULE[@]}" -eq "$TF_IS" ]]
+  then
+    __duct_msg n "terraform module"
+    DUCT_TERRAFORM_IS="module"
+    return
+  fi
+
+  __duct_msg d "is deployment"
+  TF_IS=$( __duct_find_count "$TF_DIR" "${DUCT_TERRAFORM_IS_DEPLOYMENT[@]}" )
+  if [[ "${#DUCT_TERRAFORM_IS_DEPLOYMENT[@]}" -eq "$TF_IS" ]]
+  then
+    __duct_msg n "terraform deployment"
+    DUCT_TERRAFORM_IS="deployment"
+    return
+  fi
+
+  if [[ "$TF_IS" -eq 0 ]]
+  then
+    __duct_msg n "not terraform"
+    DUCT_TERRAFORM_IS="none"
+    return
+  fi
+}
+readonly -f __duct_terraform_is
