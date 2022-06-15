@@ -62,7 +62,7 @@ __duct_terraform_run() {
 
   case "$TF_CMD"
   in
-    fmt|init|plan|apply|destroy)
+    fmt|validate|init|plan|apply|destroy)
 
       # https://www.terraform.io/docs/cli/config/environment-variables.html
       export TF_IN_AUTOMATION=true
