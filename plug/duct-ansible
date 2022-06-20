@@ -198,8 +198,6 @@ __duct_ansible_requirements() {
 
   if [[ -s "$DUCT_ANSIBLE_REQUIREMENTS_FILENAME" ]]
   then
-    __duct_checkbin ansible-galaxy
-
     __duct_msg n "installing collections from $DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
     __duct_ansible_run galaxy collection install "${ANS_OPTS[@]}" --upgrade -r "$DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
 
