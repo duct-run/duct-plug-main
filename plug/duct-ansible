@@ -76,6 +76,7 @@ __duct_ansible_venv() {
 
       # shellcheck disable=SC1091
       source "${DUCT_ANSIBLE_VENV_PATH}/bin/activate"
+      __duct_msg d "virtual env $VIRTUAL_ENV"
     else
       __duct_msg e "${DUCT_ANSIBLE_VENV_PATH}/bin/activate not found!"
       return 1
