@@ -201,10 +201,10 @@ __duct_ansible_requirements() {
     __duct_checkbin ansible-galaxy
 
     __duct_msg n "installing collections from $DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
-    __duct_run ansible-galaxy collection install "${ANS_OPTS[@]}" --upgrade -r "$DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
+    __duct_ansible_run ansible-galaxy collection install "${ANS_OPTS[@]}" --upgrade -r "$DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
 
     __duct_msg n "installing roles from $DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
-    __duct_run ansible-galaxy role install "${ANS_OPTS[@]}" -r "$DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
+    __duct_ansible_run ansible-galaxy role install "${ANS_OPTS[@]}" -r "$DUCT_ANSIBLE_REQUIREMENTS_FILENAME"
   else
     __duct_msg w "$DUCT_ANSIBLE_REQUIREMENTS_FILENAME file not found!"
   fi
