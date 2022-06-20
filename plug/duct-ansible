@@ -213,8 +213,8 @@ readonly -f __duct_ansible_requirements
 
 # ansible vault
 
-# Ansible vault password.
-declare -g DUCT_ANSIBLE_VAULT_PASSWORD="${DUCT_ANSIBLE_VAULT_PASSWORD:-}"
+# Ansible vault password (inherit `ANSIBLE_VAULT_PASSWORD`).
+declare -g DUCT_ANSIBLE_VAULT_PASSWORD="${DUCT_ANSIBLE_VAULT_PASSWORD:-${ANSIBLE_VAULT_PASSWORD:-}}"
 
 # Ansible vault password file (inherit `ANSIBLE_VAULT_PASSWORD_FILE`).
 declare -g DUCT_ANSIBLE_VAULT_FILENAME="${DUCT_ANSIBLE_VAULT_FILENAME:-${ANSIBLE_VAULT_PASSWORD_FILE:-"${HOME}/.ansible/vault"}}"
