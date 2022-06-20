@@ -148,12 +148,12 @@ __duct_ansible_run() {
   export ANSIBLE_PIPELINING="$DUCT_ANSIBLE_RUN_PIPELINING"
   #...
 
+  __duct_ansible_config
+
   if [[ "$DUCT_ANSIBLE_RUN_VERSION" == true ]]
   then
     __duct_run "$ANS_BIN" --version
   fi
-
-  __duct_ansible_config
 
   __duct_msg n "running $ANS_BIN"
   __duct_run "$ANS_BIN" "${ANS_OPTS[@]}" || ANS_RC=$?
