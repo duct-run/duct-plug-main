@@ -608,6 +608,59 @@ __duct_terraform_provider_latest() {
 }
 readonly -f __duct_terraform_provider_latest
 
+# terraform provider version
+
+# Terraform provider version (set at run-time).
+declare -g -x -A DUCT_TERRAFORM_PROVIDER_VERSION=()
+
+# Terraform provider version file.
+declare -g DUCT_TERRAFORM_PROVIDER_VERSION_FILE="${DUCT_TERRAFORM_PROVIDER_VERSION_FILE:-"versions.tf"}"
+
+# deps: duct-msg
+# intl: false
+# life: main
+# desc: Get current Terraform provider version from file.
+# opts: [file]
+__duct_terraform_provider_version() {
+  local TF_VERSION_FILE="${1:-$DUCT_TERRAFORM_PROVIDER_VERSION_FILE}"
+
+  local -a TF_DATA
+  local TF_LINE
+  local TF_PROVIDER
+  local TF_VERSION
+
+  if [[ ! -s "$TF_VERSION_FILE" ]]
+  then
+    __duct_msg e "$TF_VERSION_FILE not found!"
+    return 1
+  fi
+
+  mapfile -t -n 0 TF_DATA < "$TF_VERSION_FILE"
+
+  for TF_LINE in "${TF_DATA[@]}"
+  do
+    if [[ "$TF_LINE" =~ [[:space:]]+source[[:space:]]+=[[:space:]]+\"?([a-z/]+)\"? ]]
+    then
+      TF_PROVIDER="${BASH_REMATCH[-1]}"
+    fi
+
+    if [[ "$TF_LINE" =~ [[:space:]]+version[[:space:]]+=[[:space:]]+\"?(~>|=|>=|<=)?([0-9.]+)\"? ]]
+    then
+
+      if [[ -n "$TF_PROVIDER" ]]
+      then
+        TF_VERSION="${BASH_REMATCH[-1]}"
+
+        DUCT_TERRAFORM_PROVIDER_VERSION["$TF_PROVIDER"]="$TF_VERSION"
+      else
+        __duct_msg e "something went wrong!"
+        return 1
+      fi
+    fi
+  done
+}
+readonly -f __duct_terraform_provider_version
+
 # backend
 
 # Backend configuration options (quote to avoid problems).
