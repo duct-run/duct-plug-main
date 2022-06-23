@@ -642,14 +642,15 @@ __duct_terraform_provider_version() {
     if [[ "$TF_LINE" =~ [[:space:]]+source[[:space:]]+=[[:space:]]+\"?([a-z/]+)\"? ]]
     then
       TF_PROVIDER="${BASH_REMATCH[-1]}"
+      __duct_msg d "found $TF_PROVIDER"
     fi
 
     if [[ "$TF_LINE" =~ [[:space:]]+version[[:space:]]+=[[:space:]]+\"?(~>|=|>=|<=)?([0-9.]+)\"? ]]
     then
-
       if [[ -n "$TF_PROVIDER" ]]
       then
         TF_VERSION="${BASH_REMATCH[-1]}"
+        __duct_msg d "found $TF_PROVIDER version $TF_VERSION"
 
         DUCT_TERRAFORM_PROVIDER_VERSION["$TF_PROVIDER"]="$TF_VERSION"
       else
