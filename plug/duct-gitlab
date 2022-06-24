@@ -281,7 +281,7 @@ __duct_gitlab_milestone() {
     MILESTONE_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_MILESTONE_PROJECT_ID}/milestones?state=active" )"
   fi
 
-  readarray -t MILESTONE_QUERY < <( jq -r '.[] | .id|tostring + "|" + .title + "|" + .web_url' <<< "$MILESTONE_INFO" )
+  readarray -t MILESTONE_QUERY < <( jq -r '.[] | (.id|tostring) + "|" + .title + "|" + .web_url' <<< "$MILESTONE_INFO" )
 
   for INFO in "${MILESTONE_QUERY[@]}"
   do
