@@ -369,6 +369,7 @@ __duct_gitlab_issue() {
 
     if [[ "$TITLE" == "$DUCT_GITLAB_ISSUE_TITLE" ]]
     then
+      echo "${URL##*/}" # iid
       __duct_msg n "exists $URL"
       return 0
     fi
