@@ -299,6 +299,8 @@ __duct_gitlab_milestone() {
     TITLE="${INFO%%:*}"
     URL="${INFO#*:}"
 
+    echo "$TITLE"
+
     if [[ "$TITLE" == "$DUCT_GITLAB_MILESTONE_TITLE" ]]
     then
       echo "${URL##*/}" # iid
