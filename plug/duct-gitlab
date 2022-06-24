@@ -359,9 +359,9 @@ __duct_gitlab_issue() {
   unset IFS
 
   ISSUE_DATA="$( __duct_array2json "${ISSUE_BODY[@]}" )"
-  echo "$ISSUE_DATA"
-  return 0
+  ISSUE_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_ISSUE_PROJECT_ID}/issues?state=opened" )"
 
+  echo "$ISSUE_INFO"
 }
 readonly -f __duct_gitlab_issue
 
