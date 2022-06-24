@@ -362,8 +362,6 @@ __duct_gitlab_issue() {
   ISSUE_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_ISSUE_PROJECT_ID}/issues?state=opened" )"
   ISSUE_INFO="$( jq -r '.[] | .title + ":" + .web_url' <<< "$ISSUE_INFO" )"
 
-  echo "$ISSUE_INFO"
-
   for INFO in $ISSUE_INFO
   do
     TITLE="${INFO%%:*}"
@@ -497,8 +495,6 @@ __duct_gitlab_merge_request() {
   MR_DATA="$( __duct_array2json "${MR_BODY[@]}" )"
   MR_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_MERGE_REQUEST_PROJECT_ID}/merge_requests?state=opened" )"
   MR_INFO="$( jq -r '.[] | .source_branch + ":" + .web_url' <<< "$MR_INFO" )"
-
-  __duct_msg d "$MR_DATA"
 
   for INFO in $MR_INFO
   do
