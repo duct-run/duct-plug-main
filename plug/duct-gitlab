@@ -524,12 +524,12 @@ __duct_array2json() {
     JSON_VAL="${ARRAY[$I]#*:}"
 
     # number
-    if [[ "$JSON_VAL" =~ [[:digit:]] ]]
+    if [[ "$JSON_VAL" =~ ^[[:digit:]]$ ]]
     then
       printf '  "%s": %s' "$JSON_KEY" "$JSON_VAL"
 
     # list
-    elif [[ "$JSON_VAL" =~ \[(.*)\] ]]
+    elif [[ "$JSON_VAL" =~ ^\[(.*)\]$ ]]
     then
       IFS="," read -r -a _JSON_VAL <<< "${BASH_REMATCH[1]}"
 
