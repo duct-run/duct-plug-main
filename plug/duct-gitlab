@@ -291,21 +291,20 @@ __duct_gitlab_milestone() {
 
   echo "$MILESTONE_INFO"
 
+  MILESTONE_INFO="$( jq -r '.[] | .title + ":" + .web_url' <<< "$MILESTONE_INFO" )"
 
-  #ISSUE_INFO="$( jq -r '.[] | .title + ":" + .web_url' <<< "$ISSUE_INFO" )"
+  for INFO in $MILESTONE_INFO
+  do
+    TITLE="${INFO%%:*}"
+    URL="${INFO#*:}"
 
-  #for INFO in $ISSUE_INFO
-  #do
-  #  TITLE="${INFO%%:*}"
-  #  URL="${INFO#*:}"
-
-  #  if [[ "$TITLE" == "$DUCT_GITLAB_ISSUE_TITLE" ]]
-  #  then
-  #    echo "${URL##*/}" # iid
-  #    __duct_msg n "exists $URL"
-  #    return 0
-  #  fi
-  #done
+    if [[ "$TITLE" == "$DUCT_GITLAB_MILESTONE_TITLE" ]]
+    then
+      echo "${URL##*/}" # iid
+      __duct_msg n "exists $URL"
+      return 0
+    fi
+  done
 
   #ISSUE_SEND="$( __duct_gitlab_curl --request POST \
   #               --header "Content-Type: application/json" \
