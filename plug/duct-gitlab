@@ -218,6 +218,9 @@ __duct_gitlab_milestone() {
   local MILESTONE_INFO
   local MILESTONE_SEND
 
+  local MILESTONE_GROUP=0
+  local MILESTONE_PROJECT=0
+
   local MILESTONE_RC=0
   local IFS
 
@@ -231,9 +234,11 @@ __duct_gitlab_milestone() {
       (( MILESTONE_RC+=1 ))
     else
       MILESTONE_BODY+=( "id:$DUCT_GITLAB_MILESTONE_PROJECT_ID" )
+      MILESTONE_PROJECT=1
     fi
   else
     MILESTONE_BODY+=( "id:$DUCT_GITLAB_MILESTONE_GROUP_ID" )
+    MILESTONE_GROUP=1
   fi
 
   if [[ -z "$DUCT_GITLAB_MILESTONE_TITLE" ]]
@@ -243,7 +248,6 @@ __duct_gitlab_milestone() {
   else
     MILESTONE_BODY+=( "title:$DUCT_GITLAB_MILESTONE_TITLE" )
   fi
-
 
   if [[ -z "$DUCT_GITLAB_MILESTONE_START_DATE" ]]
   then
@@ -276,8 +280,43 @@ __duct_gitlab_milestone() {
 
   MILESTONE_DATA="$( __duct_array2json "${MILESTONE_BODY[@]}" )"
   echo "$MILESTONE_DATA"
-  return 0
 
+  if [[ "$MILESTONE_GROUP" -eq 1 ]]
+  then
+    MILESTONE_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/groups/${DUCT_GITLAB_MILESTONE_GROUP_ID}/milestones?state=active" )"
+  elif [[ "$MILESTONE_PROJECT" -eq 1 ]]
+  then
+    MILESTONE_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_MILESTONE_PROJECT_ID}/milestones?state=active" )"
+  fi
+
+  echo "$MILESTONE_INFO"
+
+
+  #ISSUE_INFO="$( jq -r '.[] | .title + ":" + .web_url' <<< "$ISSUE_INFO" )"
+
+  #for INFO in $ISSUE_INFO
+  #do
+  #  TITLE="${INFO%%:*}"
+  #  URL="${INFO#*:}"
+
+  #  if [[ "$TITLE" == "$DUCT_GITLAB_ISSUE_TITLE" ]]
+  #  then
+  #    echo "${URL##*/}" # iid
+  #    __duct_msg n "exists $URL"
+  #    return 0
+  #  fi
+  #done
+
+  #ISSUE_SEND="$( __duct_gitlab_curl --request POST \
+  #               --header "Content-Type: application/json" \
+  #               --data "$ISSUE_DATA" \
+  #               "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_ISSUE_PROJECT_ID}/issues" )"
+
+  #ISSUE_IID="$( echo "$ISSUE_SEND" | jq -r '.iid' )"
+  #ISSUE_URL="$( echo "$ISSUE_SEND" | jq -r '.web_url' )"
+
+  #__duct_msg n "created $ISSUE_URL"
+  #echo "$ISSUE_IID"
 }
 readonly -f __duct_gitlab_milestone
 
