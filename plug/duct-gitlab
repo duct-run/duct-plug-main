@@ -456,6 +456,9 @@ declare -g -a DUCT_GITLAB_MERGE_REQUEST_LABELS=( ${DUCT_GITLAB_MERGE_REQUEST_LAB
 # Remove source branch after merge.
 declare -g DUCT_GITLAB_MERGE_REQUEST_REMOVE_SOURCE="${DUCT_GITLAB_MERGE_REQUEST_REMOVE_SOURCE:-true}"
 
+# Squash commits info a single commit when merging.
+declare -g DUCT_GITLAB_MERGE_REQUEST_SQUASH="${DUCT_GITLAB_MERGE_REQUEST_SQUASH:-true}"
+
 # Milestone ID to link with.
 declare -g DUCT_GITLAB_MERGE_REQUEST_MILESTONE_ID="${DUCT_GITLAB_MERGE_REQUEST_MILESTONE_ID:-}"
 
@@ -523,6 +526,16 @@ __duct_gitlab_merge_request() {
     IFS="," MR_BODY+=( "labels:[${DUCT_GITLAB_MERGE_REQUEST_LABELS[*]}]" )
   fi
 
+  if [[ "$DUCT_GITLAB_MERGE_REQUEST_REMOVE_SOURCE" == true ]]
+  then
+    MR_BODY+=( "remove_source_branch:true" )
+  fi
+
+  if [[ "$DUCT_GITLAB_MERGE_REQUEST_SQUASH" == true ]]
+  then
+    MR_BODY+=( "squash:true" )
+  fi
+
   if [[ -n "$DUCT_GITLAB_MERGE_REQUEST_MILESTONE_ID" ]]
   then
     MR_BODY+=( "milestone_id:$DUCT_GITLAB_MERGE_REQUEST_MILESTONE_ID" )
@@ -584,6 +597,11 @@ __duct_array2json() {
 
     # number
     if [[ "$JSON_VAL" =~ ^[[:digit:]]+$ ]]
+    then
+      printf '  "%s": %s' "$JSON_KEY" "$JSON_VAL"
+
+    # bool
+    elif [[ "$JSON_VAL" =~ ^(true|false|yes|no)$ ]]
     then
       printf '  "%s": %s' "$JSON_KEY" "$JSON_VAL"
 
