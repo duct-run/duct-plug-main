@@ -288,14 +288,12 @@ __duct_gitlab_milestone() {
     MILESTONE_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_MILESTONE_PROJECT_ID}/milestones?state=active" )"
   fi
 
-  readarray -t MILESTONE_QUERY < <( jq -r '.[] | .title + ":" + .web_url' <<< "$MILESTONE_INFO" )
+  readarray -t MILESTONE_QUERY < <( jq -r '.[] | .title + "|" + .web_url' <<< "$MILESTONE_INFO" )
 
   for INFO in "${MILESTONE_QUERY[@]}"
   do
-    TITLE="${INFO%%:*}"
-    URL="${INFO#*:}"
-
-    echo "$TITLE"
+    TITLE="${INFO%%|*}"
+    URL="${INFO#*|}"
 
     if [[ "$TITLE" == "$DUCT_GITLAB_MILESTONE_TITLE" ]]
     then
@@ -341,7 +339,7 @@ declare -g DUCT_GITLAB_ISSUE_MILESTONE_ID="${DUCT_GITLAB_ISSUE_MILESTONE_ID:-}"
 # opts:
 __duct_gitlab_issue() {
   local -a ISSUE_BODY=()
-
+  local -a ISSUE_QUERY=()
   local ISSUE_DATA
   local ISSUE_IID
   local ISSUE_INFO
@@ -393,12 +391,12 @@ __duct_gitlab_issue() {
   ISSUE_DATA="$( __duct_array2json "${ISSUE_BODY[@]}" )"
   ISSUE_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_ISSUE_PROJECT_ID}/issues?state=opened" )"
 
-  readarray -t ISSUE_QUERY < <( jq -r '.[] | .title + ":" + .web_url' <<< "$ISSUE_INFO" )
+  readarray -t ISSUE_QUERY < <( jq -r '.[] | .title + "|" + .web_url' <<< "$ISSUE_INFO" )
 
   for INFO in "${ISSUE_QUERY[@]}"
   do
-    TITLE="${INFO%%:*}"
-    URL="${INFO#*:}"
+    TITLE="${INFO%%|*}"
+    URL="${INFO#*|}"
 
     if [[ "$TITLE" == "$DUCT_GITLAB_ISSUE_TITLE" ]]
     then
