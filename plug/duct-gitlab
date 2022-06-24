@@ -272,7 +272,6 @@ __duct_gitlab_milestone() {
   unset IFS
 
   MILESTONE_DATA="$( __duct_array2json "${MILESTONE_BODY[@]}" )"
-  echo "$MILESTONE_DATA"
 
   if [[ "$MILESTONE_GROUP" -eq 1 ]]
   then
@@ -288,9 +287,6 @@ __duct_gitlab_milestone() {
   do
     TITLE="${INFO%%|*}"
     URL="${INFO#*|}"
-
-    __duct_msg d "$TITLE"
-    __duct_msg d "$URL"
 
     if [[ "$TITLE" == "$DUCT_GITLAB_MILESTONE_TITLE" ]]
     then
