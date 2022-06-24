@@ -375,6 +375,17 @@ __duct_gitlab_issue() {
       return 0
     fi
   done
+
+  ISSUE_SEND="$( __duct_gitlab_curl --request POST \
+                 --header "Content-Type: application/json" \
+                 --data "$ISSUE_DATA" \
+                 "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_ISSUE_PROJECT_ID}/issues" )"
+
+  ISSUE_IID="$( echo "$ISSUE_SEND" | jq -r '.iid' )"
+  ISSUE_URL="$( echo "$ISSUE_SEND" | jq -r '.web_url' )"
+
+  __duct_msg n "created $ISSUE_URL"
+  echo "$ISSUE_IID"
 }
 readonly -f __duct_gitlab_issue
 
