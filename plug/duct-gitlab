@@ -332,20 +332,17 @@ __duct_gitlab_issue() {
     ISSUE_BODY+=( "title:$DUCT_GITLAB_ISSUE_TITLE" )
   fi
 
-  if [[ -z "${DUCT_GITLAB_ISSUE_DESCRIPTION[*]}" ]]
-  then
-    __duct_msg e "no description!"
-    (( ISSUE_RC+=1 ))
-  else
-    IFS="" ISSUE_BODY+=( "description:${DUCT_GITLAB_ISSUE_DESCRIPTION[*]}" )
-  fi
-
   if [[ "$ISSUE_RC" -gt 0 ]]
   then
     return 1
   fi
 
   # optional
+  if [[ -n "${DUCT_GITLAB_ISSUE_DESCRIPTION[*]}" ]]
+  then
+    IFS="" ISSUE_BODY+=( "description:${DUCT_GITLAB_ISSUE_DESCRIPTION[*]}" )
+  fi
+
   if [[ -n "${DUCT_GITLAB_ISSUE_LABELS[*]}" ]]
   then
     IFS="," ISSUE_BODY+=( "labels:[${DUCT_GITLAB_ISSUE_LABELS[*]}]" )
