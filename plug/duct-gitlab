@@ -212,7 +212,7 @@ declare -g DUCT_GITLAB_MILESTONE_DUE_DATE="${DUCT_GITLAB_MILESTONE_DUE_DATE:-}"
 # opts:
 __duct_gitlab_milestone() {
   local -a MILESTONE_BODY=()
-
+  local -a MILESTONE_QUERY=()
   local MILESTONE_DATA
   local MILESTONE_IID
   local MILESTONE_INFO
@@ -220,7 +220,6 @@ __duct_gitlab_milestone() {
 
   local MILESTONE_GROUP=0
   local MILESTONE_PROJECT=0
-
   local MILESTONE_RC=0
   local IFS
 
@@ -289,12 +288,9 @@ __duct_gitlab_milestone() {
     MILESTONE_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_MILESTONE_PROJECT_ID}/milestones?state=active" )"
   fi
 
+  readarray -t MILESTONE_QUERY < <( jq -r '.[] | .title + ":" + .web_url' <<< "$MILESTONE_INFO" )
 
-  MILESTONE_INFO="$( jq -r '.[] | .title + ":" + .web_url' <<< "$MILESTONE_INFO" )"
-
-  echo "$MILESTONE_INFO"
-
-  for INFO in $MILESTONE_INFO
+  for INFO in "${MILESTONE_QUERY[@]}"
   do
     TITLE="${INFO%%:*}"
     URL="${INFO#*:}"
