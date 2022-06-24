@@ -392,9 +392,10 @@ __duct_gitlab_issue() {
 
   ISSUE_DATA="$( __duct_array2json "${ISSUE_BODY[@]}" )"
   ISSUE_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_ISSUE_PROJECT_ID}/issues?state=opened" )"
-  ISSUE_INFO="$( jq -r '.[] | .title + ":" + .web_url' <<< "$ISSUE_INFO" )"
 
-  for INFO in $ISSUE_INFO
+  readarray -t ISSUE_QUERY < <( jq -r '.[] | .title + ":" + .web_url' <<< "$ISSUE_INFO" )
+
+  for INFO in "${ISSUE_QUERY[@]}"
   do
     TITLE="${INFO%%:*}"
     URL="${INFO#*:}"
