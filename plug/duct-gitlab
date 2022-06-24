@@ -474,6 +474,8 @@ __duct_gitlab_merge_request() {
   MR_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_MERGE_REQUEST_PROJECT_ID}/merge_requests?state=opened" )"
   MR_INFO="$( jq -r '.[] | .source_branch + ":" + .web_url' <<< "$MR_INFO" )"
 
+  __duct_msg d "$MR_DATA"
+
   for INFO in $MR_INFO
   do
     SRC="${INFO%%:*}"
