@@ -460,7 +460,7 @@ declare -g DUCT_GITLAB_MERGE_REQUEST_MILESTONE_ID="${DUCT_GITLAB_MERGE_REQUEST_M
 # opts:
 __duct_gitlab_merge_request() {
   local -a MR_BODY=()
-
+  local -a MR_QUERY=()
   local MR_DATA
   local MR_IID
   local MR_INFO
@@ -526,12 +526,13 @@ __duct_gitlab_merge_request() {
 
   MR_DATA="$( __duct_array2json "${MR_BODY[@]}" )"
   MR_INFO="$( __duct_gitlab_curl "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_MERGE_REQUEST_PROJECT_ID}/merge_requests?state=opened" )"
-  MR_INFO="$( jq -r '.[] | .source_branch + ":" + .web_url' <<< "$MR_INFO" )"
 
-  for INFO in $MR_INFO
+  readarray -t MR_QUERY < <( jq -r '.[] | .source_branch + "|" + .web_url' <<< "$MR_INFO" )
+
+  for INFO in "${MR_QUERY[@]}"
   do
-    SRC="${INFO%%:*}"
-    URL="${INFO#*:}"
+    SRC="${INFO%%|*}"
+    URL="${INFO#*|}"
 
     if [[ "$SRC" == "$DUCT_GITLAB_MERGE_REQUEST_SOURCE_BRANCH" ]]
     then
