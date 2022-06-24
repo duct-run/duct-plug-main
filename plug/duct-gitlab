@@ -524,7 +524,7 @@ __duct_array2json() {
     JSON_VAL="${ARRAY[$I]#*:}"
 
     # number
-    if [[ "$JSON_VAL" =~ ^[[:digit:]]$ ]]
+    if [[ "$JSON_VAL" =~ ^[[:digit:]]+$ ]]
     then
       printf '  "%s": %s' "$JSON_KEY" "$JSON_VAL"
 
