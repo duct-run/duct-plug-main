@@ -244,13 +244,6 @@ __duct_gitlab_milestone() {
     MILESTONE_BODY+=( "title:$DUCT_GITLAB_MILESTONE_TITLE" )
   fi
 
-  if [[ -z "${DUCT_GITLAB_MILESTONE_DESCRIPTION[*]}" ]]
-  then
-    __duct_msg e "no description!"
-    (( MILESTONE_RC+=1 ))
-  else
-    IFS="" MILESTONE_BODY+=( "description:${DUCT_GITLAB_MILESTONE_DESCRIPTION[*]}" )
-  fi
 
   if [[ -z "$DUCT_GITLAB_MILESTONE_START_DATE" ]]
   then
@@ -274,6 +267,11 @@ __duct_gitlab_milestone() {
   fi
 
   # optional
+  if [[ -n "${DUCT_GITLAB_MILESTONE_DESCRIPTION[*]}" ]]
+  then
+    IFS="" MILESTONE_BODY+=( "description:${DUCT_GITLAB_MILESTONE_DESCRIPTION[*]}" )
+  fi
+
   unset IFS
 
   MILESTONE_DATA="$( __duct_array2json "${MILESTONE_BODY[@]}" )"
