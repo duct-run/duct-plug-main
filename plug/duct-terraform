@@ -21,10 +21,10 @@
 # Terrorform operations.
 
 # Terraform release URL.
-declare -g DUCT_TERRAFORM_RELEASE_URL="https://api.releases.hashicorp.com/v1/releases" #"https://releases.hashicorp.com/terraform"
+declare -g DUCT_TERRAFORM_RELEASE_URL="${DUCT_TERRAFORM_RELEASE_URL:-"https://api.releases.hashicorp.com/v1/releases"}"
 
 # Terraform registry URL.
-declare -g DUCT_TERRAFORM_REGISTRY_URL="https://registry.terraform.io"
+declare -g DUCT_TERRAFORM_REGISTRY_URL="${DUCT_TERRAFORM_REGISTRY_URL:-"https://registry.terraform.io"}"
 
 # terraform run
 
@@ -115,7 +115,7 @@ __duct_terraform_run() {
 }
 readonly -f __duct_terraform_run
 
-# config
+# terraform config
 
 # Terraform CLI config file location.
 declare -g DUCT_TERRAFORM_CONFIG_FILE="${DUCT_TERRAFORM_CONFIG_FILE:-"$HOME/.terraformrc"}"
@@ -130,7 +130,7 @@ declare -a -r _DUCT_TERRAFORM_CONFIG_OPTIONS=(
   'plugin_cache_dir = "$HOME/.terraform.d/plugin-cache"'
 )
 
-# Terraform config file options (quote/escape to avoid problems!).
+# Terraform config file options (quote to avoid problems).
 declare -g -a DUCT_TERRAFORM_CONFIG_OPTIONS=( "${DUCT_TERRAFORM_CONFIG_OPTIONS[@]:-${_DUCT_TERRAFORM_CONFIG_OPTIONS[@]}}" )
 
 # deps: duct-msg duct-run
@@ -169,9 +169,9 @@ __duct_terraform_config() {
 }
 readonly -f __duct_terraform_config
 
-# init
+# terraform init
 
-# Terraform init options (default).
+# Terraform init options (defaults).
 declare -a -r _DUCT_TERRAFORM_INIT_OPTIONS=(
   -input=false
   -reconfigure
@@ -196,9 +196,9 @@ __duct_terraform_init() {
 }
 readonly -f __duct_terraform_init
 
-# plan
+# terraform plan
 
-# Terraform plan options (default).
+# Terraform plan options (defaults).
 declare -a -r _DUCT_TERRAFORM_PLAN_OPTIONS=(
   -input=false
 )
@@ -215,7 +215,7 @@ declare -g DUCT_TERRAFORM_PLAN_JSON="${DUCT_TERRAFORM_PLAN_JSON:-true}"
 # Plan JSON output filename.
 declare -g DUCT_TERRAFORM_PLAN_JSON_FILE="${DUCT_TERRAFORM_PLAN_JSON_FILE:-"terraform-plan.json"}"
 
-# deps:
+# deps: duct-msg
 # intl: false
 # life: main
 # desc: Run terraform plan including `duct terraform init` wiriting a plan, and optional JSON file.
@@ -224,48 +224,27 @@ __duct_terraform_plan() {
   local -a TF_OPTS=( "$@" )
   local TF_RC=0
 
+  if [[ -n "$DUCT_TERRAFORM_PLAN_FILE" ]]
+  then
+    TF_OPTS+=(
+      -out="$DUCT_TERRAFORM_PLAN_FILE"
+    )
+  fi
+
   __duct_terraform_init
-  __duct_terraform_run plan "${DUCT_TERRAFORM_PLAN_OPTIONS[@]}" -out="${DUCT_TERRAFORM_PLAN_FILE}" "${TF_OPTS[@]}" || TF_RC=$?
-
-  local TF_PLAN
-  local TF_PLAN_JSON
-
-  # adopted from https://gitlab.com/gitlab-org/terraform-images
-  local TF_PLAN_JQ='
-    (
-      [.resource_changes[]?.change.actions?] | flatten
-    ) | {
-      "create":(map(select(.=="create")) | length),
-      "update":(map(select(.=="update")) | length),
-      "delete":(map(select(.=="delete")) | length)
-    }
-  '
+  __duct_terraform_run plan "${DUCT_TERRAFORM_PLAN_OPTIONS[@]}" "${TF_OPTS[@]}" || TF_RC=$?
 
   if [[ "$DUCT_TERRAFORM_PLAN_JSON" == true ]]
   then
-    if [[ ! -f "$DUCT_TERRAFORM_PLAN_FILE" ]]
-    then
-      __duct_msg e "$DUCT_TERRAFORM_PLAN_FILE not found!"
-      TF_RC=1
-    fi
-
-    TF_PLAN="$( terraform show -json "$DUCT_TERRAFORM_PLAN_FILE" )"
-
-    if [[ -n "$TF_PLAN" ]]
-    then
-      TF_PLAN_JSON="$( echo "$TF_PLAN" | jq -r "$TF_PLAN_JQ" )"
-      __duct_msg n "creating $DUCT_TERRAFORM_PLAN_JSON_FILE"
-      echo "$TF_PLAN_JSON" > "$DUCT_TERRAFORM_PLAN_JSON_FILE"
-      __duct_msg d "$( __duct_cat "$DUCT_TERRAFORM_PLAN_JSON_FILE" )"
-    fi
+    __duct_terraform_out2json plan
   fi
   return $TF_RC
 }
 readonly -f __duct_terraform_plan
 
-# apply
+# terraform apply
 
-# Terraform apply options (default).
+# Terraform apply options (defaults).
 declare -a -r _DUCT_TERRAFORM_APPLY_OPTIONS=(
   -auto-approve
   -backup=-
@@ -285,7 +264,7 @@ declare -g DUCT_TERRAFORM_APPLY_JSON_FILE="${DUCT_TERRAFORM_APPLY_JSON_FILE:-"te
 # Enable/disable removal of the plan file.
 declare -g DUCT_TERRAFORM_APPLY_REMOVE_PLAN="${DUCT_TERRAFORM_APPLY_REMOVE_PLAN:-true}"
 
-# deps:
+# deps: duct-msg
 # intl: false
 # life: main
 # desc: Run terraform apply including `duct terraform init`, writing an optional JSON file (GitLab compatible).
@@ -296,52 +275,28 @@ __duct_terraform_apply() {
 
   __duct_terraform_init
 
-  if [[ -f "$DUCT_TERRAFORM_PLAN_FILE" ]]
+  if [[ -s "$DUCT_TERRAFORM_PLAN_FILE" ]]
   then
     TF_OPTS+=( "$DUCT_TERRAFORM_PLAN_FILE" )
-  else
-    __duct_msg n "applying without a plan file!"
   fi
 
   __duct_terraform_run apply "${DUCT_TERRAFORM_APPLY_OPTIONS[@]}" "${TF_OPTS[@]}" || TF_RC=$?
 
-  if [[ -f "$DUCT_TERRAFORM_PLAN_FILE" ]] && \
-     [[ "$DUCT_TERRAFORM_APPLY_REMOVE_PLAN" == true ]] && \
-     [[ "$TF_RC" == 0 ]]
+  if [[ "$DUCT_TERRAFORM_APPLY_REMOVE_PLAN" == true ]] && [[ -s "$DUCT_TERRAFORM_PLAN_FILE" ]]
   then
     __duct_msg n "removing $DUCT_TERRAFORM_PLAN_FILE"
-    rm -f "${DUCT_TERRAFORM_PLAN_FILE:?}"
+    __duct_run rm -f "${DUCT_TERRAFORM_PLAN_FILE:?}"
   fi
-
-  local -a TF_APPLY
-  local TF_APPLY_JSON
-  local TF_APPLY_RES
 
   if [[ "$DUCT_TERRAFORM_APPLY_JSON" == true ]]
   then
-    if [[ ! -f "$DUCT_TERRAFORM_RUN_OUTPUT" ]]
-    then
-      __duct_msg e "$DUCT_TERRAFORM_RUN_OUTPUT not found!"
-      TF_RC=1
-    fi
-
-    TF_APPLY_RES="$( __duct_gnu_grep -Po 'Resources: [0-9]+ added, [0-9]+ changed, [0-9]+ destroyed.' "$DUCT_TERRAFORM_RUN_OUTPUT" )"
-
-    if [[ -n "$TF_APPLY_RES" ]]
-    then
-      readarray -t TF_APPLY < <( __duct_gnu_grep -Eo '[0-9]+' <<< "$TF_APPLY_RES" )
-
-      TF_APPLY_JSON="{ \"create\": ${TF_APPLY[0]}, \"update\": ${TF_APPLY[1]}, \"delete\": ${TF_APPLY[2]} }"
-      __duct_msg n "creating $DUCT_TERRAFORM_APPLY_JSON_FILE"
-      echo "$TF_APPLY_JSON" | jq -r > "$DUCT_TERRAFORM_APPLY_JSON_FILE"
-      __duct_msg d "$( __duct_cat "$DUCT_TERRAFORM_APPLY_JSON_FILE" )"
-    fi
+    __duct_terraform_out2json apply
   fi
   return $TF_RC
 }
 readonly -f __duct_terraform_apply
 
-# destroy
+# terraform destroy
 
 # Terraform destroy options (default).
 declare -a -r _DUCT_TERRAFORM_DESTROY_OPTIONS=(
@@ -358,10 +313,10 @@ declare -g DUCT_TERRAFORM_DESTROY_JSON="${DUCT_TERRAFORM_DESTROY_JSON:-true}"
 # Destroy JSON filename.
 declare -g DUCT_TERRAFORM_DESTROY_JSON_FILE="${DUCT_TERRAFORM_DESTROY_JSON_FILE:-"terraform-destroy.json"}"
 
-# deps:
+# deps: duct-msg
 # intl: false
 # life: main
-# desc: Run terraform destroy operation including `duct terraform init`, writing an optional JSON file (GitLab compatible).
+# desc: Run terraform destroy operation including `duct terraform init`, write optional JSON file (GitLab compatible).
 # opts: [extra-destroy-options]
 __duct_terraform_destroy() {
   local -a TF_OPTS=( "$@" )
@@ -370,42 +325,25 @@ __duct_terraform_destroy() {
   __duct_terraform_init
   __duct_terraform_run destroy "${DUCT_TERRAFORM_DESTROY_OPTIONS[@]}" "${TF_OPTS[@]}" || TF_RC=$?
 
-  local -a TF_DESTROY
-  local TF_DESTROY_JSON
-  local TF_DESTROY_RES
-
   if [[ "$DUCT_TERRAFORM_DESTROY_JSON" == true ]]
   then
-    if [[ ! -f "$DUCT_TERRAFORM_RUN_OUTPUT" ]]
-    then
-      __duct_msg e "$DUCT_TERRAFORM_RUN_OUTPUT not found!"
-      TF_RC=1
-    fi
-
-    TF_DESTROY_RES="$( __duct_gnu_grep -Po 'Resources: [0-9]+ destroyed.' "$DUCT_TERRAFORM_RUN_OUTPUT" )"
-
-    if [[ -n "$TF_DESTROY_RES" ]]
-    then
-      readarray -t TF_DESTROY < <( __duct_gnu_grep -Eo '[0-9]+' <<< "$TF_DESTROY_RES" )
-
-      TF_DESTROY_JSON="{ \"create\": 0, \"update\": 0, \"delete\": ${TF_DESTROY[0]} }"
-      __duct_msg n "creating $DUCT_TERRAFORM_DESTROY_JSON_FILE"
-      echo "$TF_DESTROY_JSON" | jq -r > "$DUCT_TERRAFORM_DESTROY_JSON_FILE"
-      __duct_msg d "$( __duct_cat "$DUCT_TERRAFORM_DESTROY_JSON_FILE" )"
-    fi
+    __duct_terraform_out2json destroy
   fi
   return $TF_RC
 }
 readonly -f __duct_terraform_destroy
 
-# fmt
+# terraform fmt
 
-# description: Default terraform fmt options.
-declare -g -a DUCT_TERRAFORM_FMT_OPTIONS=(
+# Terraform fmt options (defaults).
+declare -r -a _DUCT_TERRAFORM_FMT_OPTIONS=(
   -check
   -diff
   -recursive
 )
+
+# Terraform fmt options.
+declare -g -a DUCT_TERRAFORM_FMT_OPTIONS=( "${DUCT_TERRAFORM_FMT_OPTIONS[@]:-${_DUCT_TERRAFORM_FMT_OPTIONS[@]}}" )
 
 # deps:
 # intl: false
@@ -421,10 +359,14 @@ __duct_terraform_fmt() {
 }
 readonly -f __duct_terraform_fmt
 
-# validate
+# terraform validate
 
-# Default terraform validate options.
-declare -g -a DUCT_TERRAFORM_VALIDATE_OPTIONS=()
+# Terraform validate options (defaults).
+declare -r -a _DUCT_TERRAFORM_VALIDATE_OPTIONS=()
+
+# shellcheck disable=SC2206
+# Terraform validate options.
+declare -g -a DUCT_TERRAFORM_VALIDATE_OPTIONS=( ${DUCT_TERRAFORM_VALIDATE_OPTIONS[@]:-${_DUCT_TERRAFORM_VALIDATE_OPTIONS[@]}} )
 
 # deps:
 # intl: false
@@ -444,7 +386,7 @@ readonly -f __duct_terraform_validate
 # terraform latest
 
 # Terraform release version or prefix to get version from (also supports `latest`).
-declare -g DUCT_TERRAFORM_LATEST_RELEASE="latest"
+declare -g DUCT_TERRAFORM_LATEST_RELEASE="${DUCT_TERRAFORM_LATEST_RELEASE:-"latest"}"
 
 # Terraform latest version (set at run-time).
 declare -g -x DUCT_TERRAFORM_LATEST_VERSION=""
@@ -526,18 +468,18 @@ readonly -f __duct_terraform_latest
 declare -g DUCT_TERRAFORM_INSTALL_TMPDIR="${TMPDIR:-"/tmp"}"
 
 # Installation destination directory.
-declare -g DUCT_TERRAFORM_INSTALL_DIR="/usr/local/bin"
+declare -g DUCT_TERRAFORM_INSTALL_DIR="${DUCT_TERRAFORM_INSTALL_DIR:-"/usr/local/bin"}"
 
 # Mode to set on installed file.
-declare -g DUCT_TERRAFORM_INSTALL_MODE=0755
+declare -g DUCT_TERRAFORM_INSTALL_MODE="${DUCT_TERRAFORM_INSTALL_MODE:-0755}"
 
 # Optional version to install (using `duct terraform latest`)
-declare -g DUCT_TERRAFORM_INSTALL_VERSION=""
+declare -g DUCT_TERRAFORM_INSTALL_VERSION="${DUCT_TERRAFORM_INSTALL_VERSION:-}"
 
 # Optional build/archive URL to install from.
-declare -g DUCT_TERRAFORM_INSTALL_BUILD=""
+declare -g DUCT_TERRAFORM_INSTALL_BUILD="${DUCT_TERRAFORM_INSTALL_BUILD:-}"
 
-# deps:
+# deps: duct-msg duct-curl duct-util
 # intl: false
 # life: main
 # desc: Install Terraform binary release.
@@ -581,12 +523,12 @@ readonly -f __duct_terraform_install
 # terraform provider latest
 
 # Terraform provider name to get latest version.
-declare -g DUCT_TERRAFORM_PROVIDER_LATEST_NAME="hashicorp/null"
+declare -g DUCT_TERRAFORM_PROVIDER_LATEST_NAME="${DUCT_TERRAFORM_PROVIDER_LATEST_NAME:-"hashicorp/null"}"
 
 # Terraform provider latest version (set at run-time).
 declare -g -x DUCT_TERRAFORM_PROVIDER_LATEST_VERSION=""
 
-# deps:
+# deps: duct-curl duct-msg
 # intl: false
 # life: main
 # desc: Get latest terraform provider version.
@@ -601,31 +543,73 @@ __duct_terraform_provider_latest() {
   TF_PROVIDER_INFO="$( __duct_curl "${DUCT_TERRAFORM_REGISTRY_URL}/v1/providers/${TF_PROVIDER_NAMESPACE}/${TF_PROVIDER_NAME}" )"
   TF_PROVIDER_VERSION="$( jq -M -e -r '.version' <<< "$TF_PROVIDER_INFO" )"
 
-  __duct_msg n "latest provider $TF_PROVIDER version is $TF_PROVIDER_VERSION"
+  __duct_msg n "$TF_PROVIDER version '$TF_PROVIDER_VERSION'"
 
   DUCT_TERRAFORM_PROVIDER_LATEST_VERSION="$TF_PROVIDER_VERSION"
   echo "$TF_PROVIDER_VERSION"
 }
 readonly -f __duct_terraform_provider_latest
 
+# terraform version
+
+# Terraform version file.
+declare -g DUCT_TERRAFORM_VERSION_FILE="${DUCT_TERRAFORM_VERSION_FILE:-"versions.tf"}"
+
+# Terraform version (set at run-time).
+declare -g -x DUCT_TERRAFORM_VERSION=""
+
+# deps: duct-msg
+# intl: false
+# life: main
+# desc: Get current Terraform version constraint from file and set `DUCT_TERRAFORM_VERSION`.
+# opts: [versions-file]
+__duct_terraform_version() {
+  local TF_VERSION_FILE="${1:-$DUCT_TERRAFORM_VERSION_FILE}"
+
+  local -a TF_DATA
+  local TF_INDEX
+  local TF_VERSION
+
+  if [[ ! -s "$TF_VERSION_FILE" ]]
+  then
+    __duct_msg e "$TF_VERSION_FILE not found!"
+    return 1
+  fi
+
+  mapfile -t -n 0 TF_DATA < "$TF_VERSION_FILE"
+
+  for TF_INDEX in "${!TF_DATA[@]}"
+  do
+    if [[ "${TF_DATA[$TF_INDEX]}" =~ [[:space:]]+required_version[[:space:]]+=[[:space:]]+\"((=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+),?[[:space:]]?(=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+))\" ]]
+    then
+      TF_VERSION="${BASH_REMATCH[1]}"
+      __duct_msg n "found '$TF_VERSION' ($TF_VERSION_FILE:$(( TF_INDEX + 1 )))"
+
+      DUCT_TERRAFORM_VERSION="$TF_VERSION"
+      __duct_msg d "set DUCT_TERRAFORM_VERSION='$TF_VERSION'"
+    fi
+  done
+}
+readonly -f __duct_terraform_version
+
 # terraform provider version
 
 # Terraform provider version (set at run-time).
 declare -g -x -A DUCT_TERRAFORM_PROVIDER_VERSION=()
 
-# Terraform provider version file.
-declare -g DUCT_TERRAFORM_PROVIDER_VERSION_FILE="${DUCT_TERRAFORM_PROVIDER_VERSION_FILE:-"versions.tf"}"
+# Terraform provider version file (inherit `DUCT_TERRAFORM_VERSION_FILE`).
+declare -g DUCT_TERRAFORM_PROVIDER_VERSION_FILE="${DUCT_TERRAFORM_PROVIDER_VERSION_FILE:-$DUCT_TERRAFORM_VERSION_FILE}"
 
 # deps: duct-msg
 # intl: false
 # life: main
-# desc: Get current Terraform provider version from file.
-# opts: [file]
+# desc: Get current Terraform provider version constraint from file and set `DUCT_TERRAFORM_PROVIDER_VERSION`.
+# opts: [versions-file]
 __duct_terraform_provider_version() {
   local TF_VERSION_FILE="${1:-$DUCT_TERRAFORM_PROVIDER_VERSION_FILE}"
 
   local -a TF_DATA
-  local TF_LINE
+  local TF_INDEX
   local TF_PROVIDER
   local TF_VERSION
 
@@ -637,50 +621,143 @@ __duct_terraform_provider_version() {
 
   mapfile -t -n 0 TF_DATA < "$TF_VERSION_FILE"
 
-  for TF_LINE in "${TF_DATA[@]}"
+  for TF_INDEX in "${!TF_DATA[@]}"
   do
-    if [[ "$TF_LINE" =~ [[:space:]]+source[[:space:]]+=[[:space:]]+\"?([a-z/]+)\"? ]]
+    if [[ "${TF_DATA[$TF_INDEX]}" =~ [[:space:]]+source[[:space:]]+=[[:space:]]+\"?([a-z/]+)\"? ]]
     then
       TF_PROVIDER="${BASH_REMATCH[-1]}"
-      __duct_msg d "found $TF_PROVIDER"
-    fi
+      __duct_msg d "found $TF_PROVIDER ($TF_VERSION_FILE:$(( TF_INDEX + 1 )))"
 
-    if [[ "$TF_LINE" =~ [[:space:]]+version[[:space:]]+=[[:space:]]+\"?(~>|=|>=|<=)?([0-9.]+)\"? ]]
-    then
-      if [[ -n "$TF_PROVIDER" ]]
+      if [[ "${TF_DATA[$TF_INDEX+1]}" =~ [[:space:]]+version[[:space:]]+=[[:space:]]+\"?((=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+),?[[:space:]]?(=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+)?)\"? ]]
       then
-        TF_VERSION="${BASH_REMATCH[-1]}"
-        __duct_msg d "found $TF_PROVIDER version $TF_VERSION"
+        TF_VERSION="${BASH_REMATCH[1]}"
+        __duct_msg n "found '$TF_PROVIDER' version '$TF_VERSION' ($TF_VERSION_FILE:$(( TF_INDEX + 2 )))"
 
         DUCT_TERRAFORM_PROVIDER_VERSION["$TF_PROVIDER"]="$TF_VERSION"
+        __duct_msg d "set DUCT_TERRAFORM_PROVIDER_VERSION[$TF_PROVIDER]='$TF_VERSION'"
       else
-        __duct_msg e "something went wrong!"
-        return 1
+        __duct_msg w "no version for '$TF_PROVIDER'"
       fi
     fi
   done
 }
 readonly -f __duct_terraform_provider_version
 
-# backend
+# terraform provider set
 
+# Terraform provider version file (inherit `DUCT_TERRAFORM_VERSION_FILE`).
+declare -g DUCT_TERRAFORM_PROVIDER_SET_VERSION_FILE="${DUCT_TERRAFORM_PROVIDER_SET_VERSION_FILE:-$DUCT_TERRAFORM_VERSION_FILE}"
+
+# deps: duct-msg
+# intl: false
+# life: main
+# desc: Set Terraform provider to specified version.
+# opts: <provider> <version> [versions-file]
+__duct_terraform_provider_set() {
+  local TF_PROVIDER_SET="${1:-}"
+  local TF_VERSION_SET="${2:-}"
+  local TF_VERSION_FILE="${3:-$DUCT_TERRAFORM_PROVIDER_SET_VERSION_FILE}"
+
+  local -a TF_DATA
+  local TF_INDEX
+  local TF_PROVIDER
+  local TF_VERSION
+
+  if [[ -z "$TF_PROVIDER_SET" ]] || [[ -z "$TF_VERSION_SET" ]]
+  then
+    __duct_msg e "no provider version to set!"
+    return 1
+  fi
+
+  if [[ ! -s "$TF_VERSION_FILE" ]]
+  then
+    __duct_msg e "$TF_VERSION_FILE not found!"
+    return 1
+  fi
+
+  mapfile -t -n 0 TF_DATA < "$TF_VERSION_FILE"
+
+  for TF_INDEX in "${!TF_DATA[@]}"
+  do
+    if [[ "${TF_DATA[$TF_INDEX]}" =~ [[:space:]]+source[[:space:]]+=[[:space:]]+\"?($TF_PROVIDER_SET)\"? ]]
+    then
+      if [[ "${TF_DATA[$TF_INDEX+1]}" =~ [[:space:]]+version[[:space:]]+=[[:space:]]+\"?((=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+),?[[:space:]]?(=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+)?)\"? ]]
+      then
+        VER="${BASH_REMATCH[1]}"
+        STR="${TF_DATA[$TF_INDEX+1]}"
+
+        __duct_msg n "set $TF_PROVIDER_SET '$VER' to '$TF_VERSION_SET' ($TF_VERSION_FILE:$(( TF_INDEX + 2 )))"
+        TF_DATA[$TF_INDEX+1]="${STR//$VER/$TF_VERSION_SET}"
+      else
+        __duct msg w "no version for $TF_PROVIDER_SET"
+      fi
+    fi
+  done
+
+  __duct_msg d "write $TF_VERSION_FILE"
+  printf "%s\n" "${TF_DATA[@]}" > "$TF_VERSION_FILE"
+}
+readonly -f __duct_terraform_provider_set
+
+# terraform version compare
+
+# deps: duct-msg duct-util
+# intl: false
+# life: main
+# desc: Compare Terraform versions and return latest.
+# opts: <version1> <version2>
+__duct_terraform_version_compare() {
+  local TF_VERSION1="${1:-}"
+  local TF_VERSION2="${2:-}"
+
+  if [[ -z "$TF_VERSION1" ]] || [[ -z "$TF_VERSION2" ]]
+  then
+    __duct_msg e "no versions to compare!"
+    return 1
+  fi
+
+  # TODO
+  if [[ "$TF_VERSION1" =~ (!=|>|>=|<|<=|~>) ]] || [[ "$TF_VERSION2" =~ (!=|>|>=|<|<=|~>) ]]
+  then
+    __duct_msg w "contraint compare is currently unsupported!"
+    return 0
+  fi
+
+  # strip =
+  TF_VERSION1="${TF_VERSION1//=}"
+  TF_VERSION2="${TF_VERSION2//=}"
+
+  # strip space
+  TF_VERSION1="${TF_VERSION1// }"
+  TF_VERSION2="${TF_VERSION2// }"
+
+  __duct_compversion "$TF_VERSION1" "$TF_VERSION2"
+}
+readonly -f __duct_terraform_version_compare
+
+# terraform backend
+
+# Backend configuration options (defaults).
+declare -r -a _DUCT_TERRAFORM_BACKEND_CONFIG=()
+
+# shellcheck disable=SC2206
 # Backend configuration options (quote to avoid problems).
-declare -g -a DUCT_TERRAFORM_BACKEND_CONFIG=()
+declare -g -a DUCT_TERRAFORM_BACKEND_CONFIG=( ${DUCT_TERRAFORM_BACKEND_CONFIG[@]:-${_DUCT_TERRAFORM_BACKEND_CONFIG[@]}} )
 
 # Backend configuration filename.
-declare -g DUCT_TERRAFORM_BACKEND_FILE="terraform-backend.tf"
+declare -g DUCT_TERRAFORM_BACKEND_FILE="${DUCT_TERRAFORM_BACKEND_FILE:-"terraform-backend.tf"}"
 
 # Enable/disable masking of backend secrets in messages.
-declare -g DUCT_TERRAFORM_BACKEND_MASK=true
+declare -g DUCT_TERRAFORM_BACKEND_MASK="${DUCT_TERRAFORM_BACKEND_MASK:-true}"
 
 # String to mask secrets.
-declare -g DUCT_TERRAFORM_BACKEND_MASK_STRING="[TFSECRET]"
+declare -g DUCT_TERRAFORM_BACKEND_MASK_STRING="${DUCT_TERRAFORM_BACKEND_MASK_STRING:-"[TFSECRET]"}"
 
 # Enable/disable replacing of existing backend configuration.
-declare -g DUCT_TERRAFORM_BACKEND_REPLACE=false
+declare -g DUCT_TERRAFORM_BACKEND_REPLACE="${DUCT_TERRAFORM_BACKEND_REPLACE:-false}"
 
 # Backend type (e.g. http).
-declare -g DUCT_TERRAFORM_BACKEND_TYPE=""
+declare -g DUCT_TERRAFORM_BACKEND_TYPE="${DUCT_TERRAFORM_BACKEND_TYPE:-}"
 
 # deps: duct-msg
 # intl: true
@@ -812,12 +889,12 @@ __duct_terraform_tfsec() {
 }
 readonly -f __duct_terraform_tfsec
 
-# fail
+# terraform fail
 
 # Messages to find and mark the terraform run as failed.
 declare -g -a DUCT_TERRAFORM_FAIL_MESSAGES=()
 
-# deps:
+# deps: duct-msg duct-gnu
 # intl: true
 # life: main
 # desc: Find additional messages to mark the terraform run fail.
@@ -907,3 +984,87 @@ __duct_terraform_is() {
   fi
 }
 readonly -f __duct_terraform_is
+
+# terraform out2json
+
+# deps: duct-msg
+# intl: true
+# life: main
+# desc: Parse Terraform output files to json (GitLab compatible).
+# opts: <terraform-command>
+__duct_terraform_out2json() {
+  local TF_CMD="${1:-}"
+
+  local -a TF_DATA
+  local TF_CREATE=0
+  local TF_DELETE=0
+  local TF_JSON
+  local TF_JSON_FILE
+  local TF_LINE
+  local TF_REMATCH
+  local TF_UPDATE=0
+
+  if [[ -z "$TF_CMD" ]]
+  then
+    __duct_msg e "no command!"
+    return 1
+  fi
+
+  if [[ ! -s "$DUCT_TERRAFORM_RUN_OUTPUT" ]]
+  then
+    __duct_msg e "$DUCT_TERRAFORM_RUN_OUTPUT not found!"
+    return 1
+  fi
+
+  case "$TF_CMD"
+  in
+    plan)
+      TF_REMATCH='(Plan: ([0-9+]) to add, ([0-9]+) to change, ([0-9]+) to destroy.)'
+      TF_JSON_FILE="$DUCT_TERRAFORM_PLAN_JSON_FILE"
+    ;;
+    apply)
+      TF_REMATCH='(Apply complete! Resources: ([0-9]+) added, ([0-9]+) changed, ([0-9]+) destroyed.)'
+      TF_JSON_FILE="$DUCT_TERRAFORM_APPLY_JSON_FILE"
+    ;;
+    destroy)
+      TF_REMATCH='(Destroy complete! Resources: ([0-9]+) destroyed.)'
+      TF_JSON_FILE="$DUCT_TERRAFORM_DESTROY_JSON_FILE"
+    ;;
+  esac
+
+  mapfile -t -n 0 TF_DATA < "$DUCT_TERRAFORM_RUN_OUTPUT"
+
+  for TF_LINE in "${TF_DATA[@]}"
+  do
+    # remove ANSI escape codes
+    shopt -s extglob
+    TF_LINE="${TF_LINE//$'\e'\[*([0-9;])m/}"
+    shopt -u extglob
+
+    if [[ "$TF_LINE" =~ $TF_REMATCH ]]
+    then
+      _REMATCH=( "${BASH_REMATCH[@]}" )
+
+      __duct_msg d "found '$TF_LINE'"
+
+      if [[ "$TF_CMD" =~ (plan|apply) ]]
+      then
+        TF_CREATE="${_REMATCH[-3]}"
+        TF_UPDATE="${_REMATCH[-2]}"
+        TF_DELETE="${_REMATCH[-1]}"
+
+      elif [[ "$TF_CMD" =~ (destroy) ]]
+      then
+        TF_DELETE="${_REMATCH[-1]}"
+      fi
+    fi
+  done
+
+  TF_JSON="{ \"create\": $TF_CREATE, \"update\": $TF_UPDATE, \"delete\": $TF_DELETE }"
+  __duct_msg n "creating $TF_JSON_FILE"
+  jq -e -r -M <<< "$TF_JSON" > "$TF_JSON_FILE"
+
+  __duct_msg d <<< "$TF_JSON_FILE"
+  return
+}
+readonly -f __duct_terraform_out2json
