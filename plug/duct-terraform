@@ -699,14 +699,14 @@ __duct_terraform_provider_set() {
 }
 readonly -f __duct_terraform_provider_set
 
-# terraform version compare
+# terraform compare version
 
 # deps: duct-msg duct-util
 # intl: false
 # life: main
 # desc: Compare Terraform versions and return latest.
 # opts: <version1> <version2>
-__duct_terraform_version_compare() {
+__duct_terraform_compare_version() {
   local TF_VERSION1="${1:-}"
   local TF_VERSION2="${2:-}"
 
@@ -733,7 +733,7 @@ __duct_terraform_version_compare() {
 
   __duct_compversion "$TF_VERSION1" "$TF_VERSION2"
 }
-readonly -f __duct_terraform_version_compare
+readonly -f __duct_terraform_compare_version
 
 # terraform backend
 
