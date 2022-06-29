@@ -528,10 +528,13 @@ declare -g DUCT_TERRAFORM_PROVIDER_LATEST_NAME="${DUCT_TERRAFORM_PROVIDER_LATEST
 # Terraform provider latest version (set at run-time).
 declare -g -x DUCT_TERRAFORM_PROVIDER_LATEST_VERSION=""
 
+# Terraform provider latest source URL (set at run-time).
+declare -g -x DUCT_TERRAFORM_PROVIDER_LATEST_SOURCE=""
+
 # deps: duct-curl duct-msg
 # intl: false
 # life: main
-# desc: Get latest terraform provider version.
+# desc: Get latest terraform provider version and set `DUCT_TERRAFORM_PROVIDER_LATEST_VERSION` & `DUCT_TERRAFORM_PROVIDER_LATEST_SOURCE`.
 # opts: [namespace/provider]
 __duct_terraform_provider_latest() {
   local TF_PROVIDER="${1:-${DUCT_TERRAFORM_PROVIDER_LATEST_NAME}}"
@@ -539,14 +542,20 @@ __duct_terraform_provider_latest() {
   local TF_PROVIDER_NAMESPACE="${TF_PROVIDER%%/*}"
   local TF_PROVIDER_NAME="${TF_PROVIDER##*/}"
   local TF_PROVIDER_VERSION
+  local TF_PROVIDER_SOURCE
 
   TF_PROVIDER_INFO="$( __duct_curl "${DUCT_TERRAFORM_REGISTRY_URL}/v1/providers/${TF_PROVIDER_NAMESPACE}/${TF_PROVIDER_NAME}" )"
   TF_PROVIDER_VERSION="$( jq -M -e -r '.version' <<< "$TF_PROVIDER_INFO" )"
+  TF_PROVIDER_SOURCE="$( jq -M -e -r '.source' <<< "$TF_PROVIDER_INFO" )"
 
   __duct_msg n "$TF_PROVIDER version '$TF_PROVIDER_VERSION'"
+  __duct_msg n "$TF_PROVIDER source '$TF_PROVIDER_SOURCE'"
 
+  __duct_msg d "set DUCT_TERRAFORM_PROVIDER_LATEST_VERSION='$TF_PROVIDER_VERSION'"
   DUCT_TERRAFORM_PROVIDER_LATEST_VERSION="$TF_PROVIDER_VERSION"
-  echo "$TF_PROVIDER_VERSION"
+
+  __duct_msg d "set DUCT_TERRAFORM_PROVIDER_LATEST_SOURCE='$TF_PROVIDER_SOURCE'"
+  DUCT_TERRAFORM_PROVIDER_LATEST_SOURCE="$TF_PROVIDER_SOURCE"
 }
 readonly -f __duct_terraform_provider_latest
 
