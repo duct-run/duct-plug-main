@@ -205,6 +205,8 @@ declare -g DUCT_GITLAB_MILESTONE_START_DATE="${DUCT_GITLAB_MILESTONE_START_DATE:
 
 declare -g DUCT_GITLAB_MILESTONE_DUE_DATE="${DUCT_GITLAB_MILESTONE_DUE_DATE:-}"
 
+declare -g DUCT_GITLAB_MILESTONE_CREATE="${DUCT_GITLAB_MILESTONE_CREATE:-true}"
+
 # deps:
 # intl:
 # life: devel
@@ -300,25 +302,30 @@ __duct_gitlab_milestone() {
     fi
   done
 
-  if [[ "$MILESTONE_GROUP" -eq 1 ]]
+  if [[ "$DUCT_GITLAB_MILESTONE_CREATE" == true ]]
   then
-    MILESTONE_SEND="$( __duct_gitlab_curl --request POST \
-                       --header "Content-Type: application/json" \
-                       --data "$MILESTONE_DATA" \
-                       "${DUCT_GITLAB_API}/groups/${DUCT_GITLAB_MILESTONE_GROUP_ID}/milestones" )"
-  elif [[ "$MILESTONE_PROJECT" -eq 1 ]]
-  then
-    MILESTONE_SEND="$( __duct_gitlab_curl --request POST \
-                       --header "Content-Type: application/json" \
-                       --data "$MILESTONE_DATA" \
-                       "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_PROJECT_ID}/milestones" )"
+    if [[ "$MILESTONE_GROUP" -eq 1 ]]
+    then
+      MILESTONE_SEND="$( __duct_gitlab_curl --request POST \
+                         --header "Content-Type: application/json" \
+                         --data "$MILESTONE_DATA" \
+                         "${DUCT_GITLAB_API}/groups/${DUCT_GITLAB_MILESTONE_GROUP_ID}/milestones" )"
+    elif [[ "$MILESTONE_PROJECT" -eq 1 ]]
+    then
+      MILESTONE_SEND="$( __duct_gitlab_curl --request POST \
+                         --header "Content-Type: application/json" \
+                         --data "$MILESTONE_DATA" \
+                         "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_PROJECT_ID}/milestones" )"
+    fi
+
+    MILESTONE_ID="$( jq -r '.id' <<< "$MILESTONE_SEND" )"
+    MILESTONE_URL="$( jq -r '.web_url' <<< "$MILESTONE_SEND" )"
+
+    __duct_msg n "created $MILESTONE_URL"
+    echo "$MILESTONE_ID"
+  else
+    __duct_msg w "not creating milestone!"
   fi
-
-  MILESTONE_ID="$( jq -r '.id' <<< "$MILESTONE_SEND" )"
-  MILESTONE_URL="$( jq -r '.web_url' <<< "$MILESTONE_SEND" )"
-
-  __duct_msg n "created $MILESTONE_URL"
-  echo "$MILESTONE_ID"
 }
 readonly -f __duct_gitlab_milestone
 
