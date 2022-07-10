@@ -103,7 +103,7 @@ __duct_brew_support() {
     ;;
   esac
 
-  if ! __duct_checkbin "$DUCT_BREW_BIN" && [[ "$DUCT_BREW_BOOTSTRAP" == false ]]
+  if ! __duct_bin_check "$DUCT_BREW_BIN" && [[ "$DUCT_BREW_BOOTSTRAP" == false ]]
   then
     __duct_msg e "homebrew bootstrap is disabled!"
     return 127
@@ -130,7 +130,7 @@ __duct_brew_bootstrap() {
     return $BREW_RC
   fi
 
-  if ! __duct_checkbin "$DUCT_BREW_BIN"
+  if ! __duct_bin_check "$DUCT_BREW_BIN"
   then
     __duct_msg n "bootstraping homebrew"
     __duct_run "$SHELL" -c "$( duct curl "https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" )"

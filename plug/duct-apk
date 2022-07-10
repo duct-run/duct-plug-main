@@ -67,7 +67,7 @@ __duct_apk_support() {
       __duct_source /etc/os-release OS_RELEASE
       __duct_msg n "$OS_RELEASE_PRETTY_NAME"
 
-      if ! __duct_checkbin "$DUCT_APK_BIN"
+      if ! __duct_bin_check "$DUCT_APK_BIN"
       then
         __duct_msg e "unsupported linux distribution!"
         return 1

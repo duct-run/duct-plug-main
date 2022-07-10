@@ -69,7 +69,7 @@ __duct_terraform_run() {
       unset TF_CLI_ARGS
       unset TF_CLI_CONFIG_FILE
 
-      __duct_checkbin "$DUCT_TERRAFORM_RUN_BINARY"
+      __duct_bin_check "$DUCT_TERRAFORM_RUN_BINARY"
 
       if [[ "$DUCT_TERRAFORM_RUN_VERSION" == true ]]
       then
@@ -87,7 +87,7 @@ __duct_terraform_run() {
     ;;
     tflint)
 
-      __duct_checkbin "$DUCT_TERRAFORM_RUN_BINARY_TFLINT"
+      __duct_bin_check "$DUCT_TERRAFORM_RUN_BINARY_TFLINT"
 
       if [[ "$DUCT_TERRAFORM_RUN_VERSION" == true ]]
       then
@@ -99,7 +99,7 @@ __duct_terraform_run() {
     ;;
     tfsec)
 
-      __duct_checkbin "$DUCT_TERRAFORM_RUN_BINARY_TFSEC"
+      __duct_bin_check "$DUCT_TERRAFORM_RUN_BINARY_TFSEC"
 
       if [[ "$DUCT_TERRAFORM_RUN_VERSION" == true ]]
       then
@@ -851,7 +851,7 @@ __duct_terraform_tflint() {
 
   if [[ "$DUCT_TERRAFORM_TFLINT_JUNIT" == true ]]
   then
-    __duct_checkbin "$DUCT_TERRAFORM_RUN_BINARY_TFLINT"
+    __duct_bin_check "$DUCT_TERRAFORM_RUN_BINARY_TFLINT"
     __duct_run "$DUCT_TERRAFORM_RUN_BINARY_TFLINT" "${DUCT_TERRAFORM_TFLINT_OPTIONS[@]}" "${TF_OPTS[@]}" --format=junit > "$DUCT_TERRAFORM_TFLINT_JUNIT_FILE" || :
   fi
 
@@ -889,7 +889,7 @@ __duct_terraform_tfsec() {
 
   if [[ "$DUCT_TERRAFORM_TFSEC_JUNIT" == true ]]
   then
-    __duct_checkbin "$DUCT_TERRAFORM_RUN_BINARY_TFSEC"
+    __duct_bin_check "$DUCT_TERRAFORM_RUN_BINARY_TFSEC"
     __duct_run "$DUCT_TERRAFORM_RUN_BINARY_TFSEC" "${DUCT_TERRAFORM_TFSEC_OPTIONS[@]}" "${TF_OPTS[@]}" --format junit --out "$DUCT_TERRAFORM_TFSEC_JUNIT_FILE" || :
   fi
 

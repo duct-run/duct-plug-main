@@ -140,7 +140,7 @@ __duct_ansible_run() {
     ;;
   esac
 
-  __duct_checkbin "$ANS_BIN"
+  __duct_bin_check "$ANS_BIN"
 
   # https://docs.ansible.com/ansible/latest/reference_appendices/config.html
   #export ANSIBLE_CONFIG="$DUCT_ANSIBLE_RUN_CONFIG"

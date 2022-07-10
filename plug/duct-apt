@@ -74,7 +74,7 @@ __duct_apt_support() {
       __duct_source /etc/os-release OS_RELEASE
       __duct_msg n "$OS_RELEASE_PRETTY_NAME"
 
-      if ! __duct_checkbin "$DUCT_APT_BIN"
+      if ! __duct_bin_check "$DUCT_APT_BIN"
       then
         __duct_msg e "unsupported linux distribution!"
         return 1
