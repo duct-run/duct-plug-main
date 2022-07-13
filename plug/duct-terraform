@@ -863,12 +863,11 @@ readonly -f __duct_terraform_tflint
 # terraform tfsec
 
 # Terraform tfsec options (defaults).
-declare -a -r _DUCT_TERRAFORM_TFSEC_OPTIONS=(
-  --force-all-dirs
-)
+declare -a -r _DUCT_TERRAFORM_TFSEC_OPTIONS=()
 
+# shellcheck disable=SC2206
 # Terraform tfsec options.
-declare -g -a DUCT_TERRAFORM_TFSEC_OPTIONS=( "${DUCT_TERRAFORM_TFSEC_OPTIONS[@]:-${_DUCT_TERRAFORM_TFSEC_OPTIONS[@]}}" )
+declare -g -a DUCT_TERRAFORM_TFSEC_OPTIONS=( ${DUCT_TERRAFORM_TFSEC_OPTIONS[@]:-${_DUCT_TERRAFORM_TFSEC_OPTIONS[@]}} )
 
 # Terraform tfsec enable junit output.
 declare -g DUCT_TERRAFORM_TFSEC_JUNIT="${DUCT_TERRAFORM_TFSEC_JUNIT:-true}"
