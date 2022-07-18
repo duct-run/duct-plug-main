@@ -27,13 +27,13 @@ declare -g -x DUCT_GITLAB_PIPELINE=${GITLAB_CI:-false}
 declare -g DUCT_GITLAB_USER=${DUCT_GITLAB_USER:-${GITLAB_USER:-${GITLAB_USER_LOGIN:-}}}
 
 # GitLab token, base64 encoding is supported (inherit `GITLAB_TOKEN` or `CI_JOB_TOKEN` if available).
-declare -g DUCT_GITLAB_TOKEN="${GITLAB_TOKEN:-"${CI_JOB_TOKEN:-""}"}"
+declare -g DUCT_GITLAB_TOKEN="${DUCT_GITLAB_TOKEN:-${GITLAB_TOKEN:-${CI_JOB_TOKEN:-}}}"
 
 # GitLab server URL (inherit `GITLAB_SERVER` or `CI_SERVER_URL` if available).
-declare -g DUCT_GITLAB_SERVER="${GITLAB_SERVER:-"${CI_SERVER_URL:-"https://gitlab.com"}"}"
+declare -g DUCT_GITLAB_SERVER="${DUCT_GITLAB_SERVER:-${GITLAB_SERVER:-${CI_SERVER_URL:-"https://gitlab.com"}}}"
 
 # GitLab API URL (inherit `CI_API_V4_URL` if available).
-declare -g DUCT_GITLAB_API="${CI_API_V4_URL:-"${DUCT_GITLAB_SERVER}/api/v4"}"
+declare -g DUCT_GITLAB_API="${DUCT_GITLAB_API:-${CI_API_V4_URL:-"${DUCT_GITLAB_SERVER}/api/v4"}}"
 
 # gitlab git config
 
