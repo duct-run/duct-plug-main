@@ -122,7 +122,7 @@ __duct_gitlab_paginate() {
   local GL_ID_AFTER=1
   local GL_PER_PAGE=100
 
-  local GL_PAGE="pagination=keyset&per_page=${GL_PER_PAGE}&order_by=id&sort=asc&id_after=${GL_ID_AFTER}"
+  local GL_PAGE="pagination=keyset&per_page=${GL_PER_PAGE}&order_by=id&sort=asc&simple=true&id_after=${GL_ID_AFTER}"
   local GL_API_URL="${DUCT_GITLAB_API}/${GL_API_QUERY}&${GL_PAGE}"
 
   __duct_gitlab_init
