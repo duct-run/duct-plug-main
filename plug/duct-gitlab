@@ -170,89 +170,59 @@ readonly -f __duct_gitlab_paginate
 
 # gitlab projects
 
-# deps: duct-msg duct-utils
+# deps: duct-msg
 # intl: false
 # life: main
-# desc: return GitLab projects clone-url or ID.
+# desc: Return GitLab projects clone-url or ID.
 # opts: <ssh|http|id> [search] [filter]
 __duct_gitlab_projects() {
   local GL_RETURN="${1:-"http"}"
   local GL_SEARCH="${2:-""}"
   local GL_FILTER="${3:-""}"
 
-  local GL_ERROR=0
-  local GL_HEADER_FILE
-  local GL_PER_PAGE=100
+  local -a GL_DATA
+  local GL_API_JQ
 
-  GL_HEADER_FILE="$( __duct_tmpgen gitlab-curl- )"
+  case "$GL_RETURN"
+  in
+    http)
+      GL_API_JQ='.[].http_url_to_repo'
+    ;;
+    ssh)
+      GL_API_JQ='.[].ssh_url_to_repo'
+    ;;
+    id)
+      GL_API_JQ='.[] | (.id|tostring) + ":" + .path_with_namespace'
+    ;;
+    *)
+      __duct_msg e "$GL_RETURN unknown!"
+      return 1
+    ;;
+  esac
 
-  local GL_ID_AFTER=1
-  local GL_API_QUERY="projects?search=${GL_SEARCH}&pagination=keyset&per_page=${GL_PER_PAGE}&order_by=id&sort=asc&simple=true&id_after=${GL_ID_AFTER}"
-  local -a GL_RESULT=()
-  local GL_JQ
+  readarray -t GL_DATA < <( __duct_gitlab_paginate "projects?search=${GL_SEARCH}" "$GL_API_JQ" )
 
-  if [[ -z "$DUCT_GITLAB_SERVER" ]]
+  if [[ -n "$GL_FILTER" ]]
   then
-    __duct_msg w "DUCT_GITLAB_SERVER is unset!"
-    (( GL_ERROR+=1 ))
+    __duct_msg d "using filter: $GL_FILTER"
+
+    for _IDX in "${!GL_DATA[@]}"
+    do
+      if [[ ! "${GL_DATA[$_IDX]}" =~ $GL_FILTER ]]
+      then
+        unset "GL_DATA[$_IDX]"
+      fi
+    done
   fi
 
-  __duct_gitlab_init
-
-  if [[ "$GL_RETURN" == "http" ]]
+  if [[ "$GL_RETURN" == "id" ]]
   then
-    GL_JQ='.[].http_url_to_repo'
-  elif [[ "$GL_RETURN" == "ssh" ]]
-  then
-    GL_JQ='.[].ssh_url_to_repo'
-  elif [[ "$GL_RETURN" == "id" ]]
-  then
-    GL_JQ='.[] | (.id|tostring) + ":" + .path'
+    printf "%b\n" "${GL_DATA[@]%%:*}"
   else
-    __duct_msg e "$GL_RETURN unknown!"
-    return 1
+    printf "%b\n" "${GL_DATA[@]}"
   fi
 
-  while true
-  do
-    readarray -t -O "${#GL_RESULT[@]}" GL_RESULT < <( __duct_gitlab_curl --dump-header "$GL_HEADER_FILE" "${DUCT_GITLAB_API}/${GL_API_QUERY}" | jq -r "$GL_JQ" )
-
-    GL_ID_AFTER=$( __duct_gnu_grep -Po 'id_after=[0-9]+' "$GL_HEADER_FILE" ) || break
-    GL_API_QUERY="${GL_API_QUERY//id_after=*/${GL_ID_AFTER}}"
-    __duct_msg d "results ${#GL_RESULT[@]}"
-  done
-  __duct_run rm -f "${GL_HEADER_FILE:?}"
-  __duct_msg d "applying filter '$GL_FILTER'"
-
-  for RESULT in "${GL_RESULT[@]}"
-  do
-    if [[ -n "$GL_FILTER" ]]
-    then
-      if [[ "$RESULT" =~ $GL_FILTER ]]
-      then
-        echo "$RESULT"
-      else
-        continue
-      fi
-    else
-
-      if [[ "$GL_RETURN" == "id" ]]
-      then
-        _ID="${RESULT%%:*}"
-        _SEARCH="${RESULT#*:}"
-
-        if [[ "$GL_SEARCH" == "$_SEARCH" ]]
-        then
-          echo "$_ID"
-          continue
-        fi
-
-      else
-        echo "$RESULT"
-      fi
-
-    fi
-  done
+  return
 }
 readonly -f __duct_gitlab_projects
 
