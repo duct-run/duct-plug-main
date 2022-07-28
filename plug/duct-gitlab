@@ -109,8 +109,8 @@ readonly -f __duct_gitlab_curl
 # desc: Return GitLab API queries with pagination (uses `DUCT_GITLAB_SEVER` & `DUCT_GITLAB_API`).
 # opts: <api-query> [jq-query]
 __duct_gitlab_paginate() {
-  local GL_API_QUERY="${1:-$DUCT_GITLAB_PAGINATE_QUERY}"
-  local GL_JQ_QUERY="${2:-$DUCT_GITLAB_PAGINATE_JQ}"
+  local GL_API_QUERY="${1:-}"
+  local GL_JQ_QUERY="${2:-}"
 
   if [[ -z "$GL_API_QUERY" ]]
   then
