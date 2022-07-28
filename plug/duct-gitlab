@@ -119,13 +119,20 @@ __duct_gitlab_paginate() {
   fi
 
   local -a GL_DATA=()
-  local GL_ID_AFTER=1
+  local GL_PAGE=1
   local GL_PER_PAGE=100
-
-  local GL_PAGE="pagination=keyset&per_page=${GL_PER_PAGE}&order_by=id&sort=asc&simple=true&id_after=${GL_ID_AFTER}"
-  local GL_API_URL="${DUCT_GITLAB_API}/${GL_API_QUERY}&${GL_PAGE}"
+  local GL_PAGER="page=${GL_PAGE}&per_page=${GL_PER_PAGE}"
 
   __duct_gitlab_init
+
+  local GL_API_URL="${DUCT_GITLAB_API}/${GL_API_QUERY}"
+
+  if [[ "$GL_API_URL" =~ \? ]]
+  then
+    GL_API_URL+="&${GL_PAGER}"
+  else
+    GL_API_URL+="?${GL_PAGER}"
+  fi
 
   local GL_HEADER_FILE
   GL_HEADER_FILE="$( __duct_tmpgen duct-gitlab-curl- )"
@@ -138,23 +145,23 @@ __duct_gitlab_paginate() {
 
     for _LINE in "${GL_HEADER[@]}"
     do
-      if [[ "$_LINE" =~ (id_after=[0-9]+) ]]
+      if [[ "$_LINE" =~ (x-next-page: ([0-9]+)) ]]
       then
-        GL_ID_AFTER="${BASH_REMATCH[1]}"
+        GL_PAGE="${BASH_REMATCH[-1]}"
         break
       else
-        GL_ID_AFTER=1
+        GL_PAGE=0
       fi
     done
 
-    if [[ "$GL_ID_AFTER" -eq 1 ]]
+    if [[ "$GL_PAGE" -eq 0 ]]
     then
-      __duct_msg d "${#GL_DATA[@]} pages ($GL_PER_PAGE results per page)."
+      __duct_msg d "${#GL_DATA[@]} page(s) ($GL_PER_PAGE results per page)."
       __duct_run rm -f "${GL_HEADER_FILE:?}"
       break
     fi
 
-    GL_API_URL="${GL_API_URL//id_after=*/${GL_ID_AFTER}}"
+    GL_API_URL="${GL_API_URL//page=*/page=${GL_PAGE}}"
   done
 
   if [[ -n "$GL_JQ_QUERY" ]]
