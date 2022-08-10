@@ -652,6 +652,61 @@ __duct_terraform_provider_version() {
 }
 readonly -f __duct_terraform_provider_version
 
+# terraform set
+
+# Terraform version file (inherit `DUCT_TERRAFORM_VERSION_FILE`).
+declare -g DUCT_TERRAFORM_SET_VERSION_FILE="${DUCT_TERRAFORM_SET_VERSION_FILE:-$DUCT_TERRAFORM_VERSION_FILE}"
+
+# deps: duct-msg
+# intl: false
+# life: main
+# desc: Set Terraform provider to specified version.
+# opts: <version> [versions-file]
+__duct_terraform_set() {
+  local TF_VERSION_SET="${1:-}"
+  local TF_VERSION_FILE="${2:-$DUCT_TERRAFORM_SET_VERSION_FILE}"
+
+  local -a TF_DATA
+  local TF_INDEX
+  local TF_VERSION
+
+  if [[ -z "$TF_VERSION_SET" ]]
+  then
+    __duct_msg e "no version to set!"
+    return 1
+  fi
+
+  if [[ ! -s "$TF_VERSION_FILE" ]]
+  then
+    __duct_msg e "$TF_VERSION_FILE not found!"
+    return 1
+  fi
+
+  mapfile -t -n 0 TF_DATA < "$TF_VERSION_FILE"
+
+  for TF_INDEX in "${!TF_DATA[@]}"
+  do
+    if [[ "${TF_DATA[$TF_INDEX]}" =~ [[:space:]]+required_version[[:space:]]+=[[:space:]]+\"?((=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+),?[[:space:]]?(=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+)?)\"? ]]
+    then
+      VER="${BASH_REMATCH[1]}"
+      STR="${TF_DATA[$TF_INDEX]}"
+
+      if [[ "$VER" != "$TF_VERSION_SET" ]]
+      then
+        __duct_msg n "set terraform version from '$VER' to '$TF_VERSION_SET' ($TF_VERSION_FILE:$(( TF_INDEX + 1 )))"
+        TF_DATA[$TF_INDEX]="${STR//$VER/$TF_VERSION_SET}"
+      else
+        __duct_msg n "terraform version is '$TF_VERSION_SET'"
+        return
+      fi
+    fi
+  done
+
+  __duct_msg d "write $TF_VERSION_FILE"
+  printf "%s\n" "${TF_DATA[@]}" > "$TF_VERSION_FILE"
+}
+readonly -f __duct_terraform_set
+
 # terraform provider set
 
 # Terraform provider version file (inherit `DUCT_TERRAFORM_VERSION_FILE`).
