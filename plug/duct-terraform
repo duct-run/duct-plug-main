@@ -750,8 +750,14 @@ __duct_terraform_provider_set() {
         VER="${BASH_REMATCH[1]}"
         STR="${TF_DATA[$TF_INDEX+1]}"
 
-        __duct_msg n "set $TF_PROVIDER_SET '$VER' to '$TF_VERSION_SET' ($TF_VERSION_FILE:$(( TF_INDEX + 2 )))"
-        TF_DATA[$TF_INDEX+1]="${STR//$VER/$TF_VERSION_SET}"
+        if [[ "$VER" != "$TF_VERSION_SET" ]]
+        then
+          __duct_msg n "set $TF_PROVIDER_SET version from '$VER' to '$TF_VERSION_SET' ($TF_VERSION_FILE:$(( TF_INDEX + 2 )))"
+          TF_DATA[$TF_INDEX+1]="${STR//$VER/$TF_VERSION_SET}"
+        else
+          __duct_msg n "$TF_PROVIDER_SET version is '$TF_VERSION_SET'"
+          return
+        fi
       else
         __duct msg w "no version for $TF_PROVIDER_SET"
       fi
