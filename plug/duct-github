@@ -73,6 +73,9 @@ __duct_github_curl() {
     GH_CURL_OPTS+=( "-u ${DUCT_GITHUB_USER}:${_GH_TOKEN}" )
     unset _GH_TOKEN
   fi
+
+  DUCT_RUN_MASK_MATCH='(-u ([0-9A-Za-z_\-]*):([0-9A-Za-z_\-]*))' \
+  DUCT_RUN_MASK_INDEX=3 \
   __duct_curl "${GH_CURL_OPTS[@]}" "${GH_URL[@]}" || GH_RC=$?
   return $GH_RC
 }

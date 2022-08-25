@@ -96,6 +96,8 @@ __duct_gitlab_curl() {
     GL_CURL_OPTS+=( --header "PRIVATE-TOKEN: ${GL_TOKEN}" )
   fi
 
+  DUCT_RUN_MASK_MATCH='(PRIVATE-TOKEN: ([0-9A-Za-z_\-]*))' \
+  DUCT_RUN_MASK_INDEX=2 \
   __duct_curl "${GL_CURL_OPTS[@]}" "${GL_URL[@]}" || GL_RC=$?
   return $GL_RC
 }
