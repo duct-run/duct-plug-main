@@ -66,6 +66,9 @@ __duct_terraform_run() {
 
       # https://www.terraform.io/docs/cli/config/environment-variables.html
       export TF_IN_AUTOMATION=true
+      export TF_REGISTRY_DISCOVERY_RETRY=5
+      export TF_REGISTRY_CLIENT_TIMEOUT=30
+
       unset TF_CLI_ARGS
       unset TF_CLI_CONFIG_FILE
 
@@ -84,6 +87,8 @@ __duct_terraform_run() {
       __duct_terraform_fail || TF_RC=$?
 
       unset TF_IN_AUTOMATION
+      unset TF_REGISTRY_DISCOVERY_RETRY
+      unset TF_REGISTRY_CLIENT_TIMEOUT
     ;;
     tflint)
 
