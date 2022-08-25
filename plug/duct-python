@@ -84,7 +84,7 @@ __duct_python_pip() {
     then
       __duct_msg d "adding requirements file $REQ"
       PIP_REQ_FILES+=( "$REQ" )
-      readarray -t PIP_REQ < <( __duct_striparray "^${REQ}$" "${PIP_REQ[@]}" )
+      readarray -t PIP_REQ < <( __duct_array_strip "^${REQ}$" "${PIP_REQ[@]}" )
     fi
   done
 

@@ -446,7 +446,7 @@ __duct_terraform_latest() {
 
   for TF_BUILD in "${TF_BUILDS[@]}"
   do
-    _HOSTTYPE_COMMON="($( __duct_joinarray "|" "${DUCT_HOSTTYPE_COMMON[@]}" ))"
+    _HOSTTYPE_COMMON="($( __duct_array_join "|" "${DUCT_HOSTTYPE_COMMON[@]}" ))"
 
     if [[ "$TF_BUILD" =~ $DUCT_OSTYPE ]] && [[ "$TF_BUILD" =~ $_HOSTTYPE_COMMON ]]
     then

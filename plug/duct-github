@@ -135,7 +135,7 @@ __duct_github_latest() {
 
     readarray -t GH_REL_ASSETS < <( printf "%s\n" "$GH_REL_DATA" | jq -M -r '.assets[].browser_download_url' )
 
-    _HOSTTYPE_COMMON="($( __duct_joinarray "|" "${DUCT_HOSTTYPE_COMMON[@]}" ))"
+    _HOSTTYPE_COMMON="($( __duct_array_join "|" "${DUCT_HOSTTYPE_COMMON[@]}" ))"
     for GH_REL_ASSET in "${GH_REL_ASSETS[@]}"
     do
       if [[ "$GH_REL_ASSET" =~ \.(sig|txt|sum)$ ]]
