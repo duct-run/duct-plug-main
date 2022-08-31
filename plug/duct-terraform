@@ -46,13 +46,12 @@ declare -g DUCT_TERRAFORM_RUN_VERSION="${DUCT_TERRAFORM_RUN_VERSION:-false}"
 # deps: duct-msg duct-run duct-util
 # intl: true
 # life: main
-# desc: Run terraform commands writing a output file for parsing, including `duct terraform fail`.
+# desc: Run terraform commands writing a output file for parsing.
 # opts: <terraform-command>
 __duct_terraform_run() {
   local TF_CMD="${1:-}"
   shift
   local -a TF_OPTS=( "$@" )
-  local TF_RC=0
 
   if [[ -z "$TF_CMD" ]]
   then
@@ -82,9 +81,7 @@ __duct_terraform_run() {
       __duct_msg n "running terraform $TF_CMD"
 
       DUCT_RUN_OUTPUT="$DUCT_TERRAFORM_RUN_OUTPUT" \
-      __duct_run output "$DUCT_TERRAFORM_RUN_BINARY" "$TF_CMD" "${TF_OPTS[@]}" || TF_RC=$?
-
-      #__duct_terraform_fail || TF_RC=$?
+      __duct_run output "$DUCT_TERRAFORM_RUN_BINARY" "$TF_CMD" "${TF_OPTS[@]}" || return
 
       unset TF_IN_AUTOMATION
       unset TF_REGISTRY_DISCOVERY_RETRY
@@ -100,7 +97,7 @@ __duct_terraform_run() {
       fi
 
       DUCT_RUN_OUTPUT="$DUCT_TERRAFORM_RUN_OUTPUT" \
-      __duct_run output "$DUCT_TERRAFORM_RUN_BINARY_TFLINT" "${TF_OPTS[@]}" || TF_RC=$?
+      __duct_run output "$DUCT_TERRAFORM_RUN_BINARY_TFLINT" "${TF_OPTS[@]}" || return
     ;;
     tfsec)
 
@@ -112,11 +109,9 @@ __duct_terraform_run() {
       fi
 
       DUCT_RUN_OUTPUT="$DUCT_TERRAFORM_RUN_OUTPUT" \
-      __duct_run output "$DUCT_TERRAFORM_RUN_BINARY_TFSEC" "${TF_OPTS[@]}" || TF_RC=$?
+      __duct_run output "$DUCT_TERRAFORM_RUN_BINARY_TFSEC" "${TF_OPTS[@]}" || return
     ;;
   esac
-
-  return $TF_RC
 }
 readonly -f __duct_terraform_run
 
@@ -906,7 +901,6 @@ declare -g DUCT_TERRAFORM_TFLINT_JUNIT_FILE="${DUCT_TERRAFORM_TFLINT_JUNIT_FILE:
 # opts: [tflint-options]
 __duct_terraform_tflint() {
   local -a TF_OPTS=( "$@" )
-  local TF_RC=0
 
   __duct_terraform_init -backend=false
 
@@ -916,8 +910,8 @@ __duct_terraform_tflint() {
     __duct_run "$DUCT_TERRAFORM_RUN_BINARY_TFLINT" "${DUCT_TERRAFORM_TFLINT_OPTIONS[@]}" "${TF_OPTS[@]}" --format=junit > "$DUCT_TERRAFORM_TFLINT_JUNIT_FILE" || :
   fi
 
-  __duct_terraform_run tflint "${DUCT_TERRAFORM_TFLINT_OPTIONS[@]}" "${TF_OPTS[@]}" || TF_RC=$?
-  return $TF_RC
+  __duct_terraform_run tflint "${DUCT_TERRAFORM_TFLINT_OPTIONS[@]}" "${TF_OPTS[@]}"
+  return
 }
 readonly -f __duct_terraform_tflint
 
@@ -943,9 +937,6 @@ declare -g DUCT_TERRAFORM_TFSEC_JUNIT_FILE="${DUCT_TERRAFORM_TFSEC_JUNIT_FILE:-"
 # opts: [tfsec-options]
 __duct_terraform_tfsec() {
   local -a TF_OPTS=( "$@" )
-  local TF_RC=0
-
-  #__duct_terraform_init -backend=false
 
   if [[ "$DUCT_TERRAFORM_TFSEC_JUNIT" == true ]]
   then
@@ -953,8 +944,8 @@ __duct_terraform_tfsec() {
     __duct_run "$DUCT_TERRAFORM_RUN_BINARY_TFSEC" "${DUCT_TERRAFORM_TFSEC_OPTIONS[@]}" "${TF_OPTS[@]}" --format junit --out "$DUCT_TERRAFORM_TFSEC_JUNIT_FILE" || :
   fi
 
-  __duct_terraform_run tfsec "${DUCT_TERRAFORM_TFSEC_OPTIONS[@]}" "${TF_OPTS[@]}" || TF_RC=$?
-  return $TF_RC
+  __duct_terraform_run tfsec "${DUCT_TERRAFORM_TFSEC_OPTIONS[@]}" "${TF_OPTS[@]}"
+  return
 }
 readonly -f __duct_terraform_tfsec
 
