@@ -1137,8 +1137,6 @@ __duct_terraform_out2json() {
   TF_JSON="{ \"create\": $TF_CREATE, \"update\": $TF_UPDATE, \"delete\": $TF_DELETE }"
   __duct_msg n "creating $TF_JSON_FILE"
   jq -e -r -M <<< "$TF_JSON" > "$TF_JSON_FILE"
-
-  __duct_msg d <<< "$TF_JSON_FILE"
   return
 }
 readonly -f __duct_terraform_out2json
