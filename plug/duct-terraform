@@ -84,7 +84,7 @@ __duct_terraform_run() {
       DUCT_RUN_OUTPUT="$DUCT_TERRAFORM_RUN_OUTPUT" \
       __duct_run output "$DUCT_TERRAFORM_RUN_BINARY" "$TF_CMD" "${TF_OPTS[@]}" || TF_RC=$?
 
-      __duct_terraform_fail || TF_RC=$?
+      #__duct_terraform_fail || TF_RC=$?
 
       unset TF_IN_AUTOMATION
       unset TF_REGISTRY_DISCOVERY_RETRY
@@ -227,7 +227,6 @@ declare -g DUCT_TERRAFORM_PLAN_JSON_FILE="${DUCT_TERRAFORM_PLAN_JSON_FILE:-"terr
 # opts: [extra-options]
 __duct_terraform_plan() {
   local -a TF_OPTS=( "$@" )
-  local TF_RC=0
 
   if [[ -n "$DUCT_TERRAFORM_PLAN_FILE" ]]
   then
@@ -237,13 +236,13 @@ __duct_terraform_plan() {
   fi
 
   __duct_terraform_init
-  __duct_terraform_run plan "${DUCT_TERRAFORM_PLAN_OPTIONS[@]}" "${TF_OPTS[@]}" || TF_RC=$?
+  __duct_terraform_run plan "${DUCT_TERRAFORM_PLAN_OPTIONS[@]}" "${TF_OPTS[@]}" || return
 
   if [[ "$DUCT_TERRAFORM_PLAN_JSON" == true ]]
   then
     __duct_terraform_out2json plan
   fi
-  return $TF_RC
+  return
 }
 readonly -f __duct_terraform_plan
 
@@ -276,7 +275,6 @@ declare -g DUCT_TERRAFORM_APPLY_REMOVE_PLAN="${DUCT_TERRAFORM_APPLY_REMOVE_PLAN:
 # opts: [extra-options]
 __duct_terraform_apply() {
   local -a TF_OPTS=( "$@" )
-  local TF_RC=0
 
   __duct_terraform_init
 
@@ -285,7 +283,7 @@ __duct_terraform_apply() {
     TF_OPTS+=( "$DUCT_TERRAFORM_PLAN_FILE" )
   fi
 
-  __duct_terraform_run apply "${DUCT_TERRAFORM_APPLY_OPTIONS[@]}" "${TF_OPTS[@]}" || TF_RC=$?
+  __duct_terraform_run apply "${DUCT_TERRAFORM_APPLY_OPTIONS[@]}" "${TF_OPTS[@]}" || return
 
   if [[ "$DUCT_TERRAFORM_APPLY_REMOVE_PLAN" == true ]] && [[ -s "$DUCT_TERRAFORM_PLAN_FILE" ]]
   then
@@ -297,7 +295,7 @@ __duct_terraform_apply() {
   then
     __duct_terraform_out2json apply
   fi
-  return $TF_RC
+  return
 }
 readonly -f __duct_terraform_apply
 
@@ -325,16 +323,15 @@ declare -g DUCT_TERRAFORM_DESTROY_JSON_FILE="${DUCT_TERRAFORM_DESTROY_JSON_FILE:
 # opts: [extra-destroy-options]
 __duct_terraform_destroy() {
   local -a TF_OPTS=( "$@" )
-  local TF_RC=0
 
   __duct_terraform_init
-  __duct_terraform_run destroy "${DUCT_TERRAFORM_DESTROY_OPTIONS[@]}" "${TF_OPTS[@]}" || TF_RC=$?
+  __duct_terraform_run destroy "${DUCT_TERRAFORM_DESTROY_OPTIONS[@]}" "${TF_OPTS[@]}" || return
 
   if [[ "$DUCT_TERRAFORM_DESTROY_JSON" == true ]]
   then
     __duct_terraform_out2json destroy
   fi
-  return $TF_RC
+  return
 }
 readonly -f __duct_terraform_destroy
 
@@ -357,10 +354,9 @@ declare -g -a DUCT_TERRAFORM_FMT_OPTIONS=( "${DUCT_TERRAFORM_FMT_OPTIONS[@]:-${_
 # opts: [extra-options]
 __duct_terraform_fmt() {
   local -a TF_OPTS=( "$@" )
-  local TF_RC=0
 
-  __duct_terraform_run fmt "${DUCT_TERRAFORM_FMT_OPTIONS[@]}" "${TF_OPTS[@]}" || TF_RC=$?
-  return $TF_RC
+  __duct_terraform_run fmt "${DUCT_TERRAFORM_FMT_OPTIONS[@]}" "${TF_OPTS[@]}"
+  return
 }
 readonly -f __duct_terraform_fmt
 
@@ -380,11 +376,10 @@ declare -g -a DUCT_TERRAFORM_VALIDATE_OPTIONS=( ${DUCT_TERRAFORM_VALIDATE_OPTION
 # opts: [extra-options]
 __duct_terraform_validate() {
   local -a TF_OPTS=( "$@" )
-  local TF_RC=0
 
   __duct_terraform_init -backend=false
-  __duct_terraform_run validate "${DUCT_TERRAFORM_VALIDATE_OPTIONS[@]}" "${TF_OPTS[@]}" || TF_RC=$?
-  return $TF_RC
+  __duct_terraform_run validate "${DUCT_TERRAFORM_VALIDATE_OPTIONS[@]}" "${TF_OPTS[@]}"
+  return
 }
 readonly -f __duct_terraform_validate
 
