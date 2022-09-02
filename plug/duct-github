@@ -146,11 +146,13 @@ __duct_github_latest() {
         continue
       fi
 
+      shopt -s nocasematch
       if [[ "$GH_REL_ASSET" =~ $DUCT_OSTYPE ]] && [[ "$GH_REL_ASSET" =~ $_HOSTTYPE_COMMON ]]
       then
         __duct_msg d "found asset $GH_REL_ASSET"
         DUCT_GITHUB_LATEST_ASSET="$GH_REL_ASSET"
       fi
+      shopt -u nocasematch
     done
     unset _HOSTTYPE_COMMON
 
