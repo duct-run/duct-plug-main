@@ -351,7 +351,6 @@ __duct_terraform_fmt() {
   local -a TF_OPTS=( "$@" )
 
   __duct_terraform_run fmt "${DUCT_TERRAFORM_FMT_OPTIONS[@]}" "${TF_OPTS[@]}"
-  return
 }
 readonly -f __duct_terraform_fmt
 
@@ -364,6 +363,9 @@ declare -r -a _DUCT_TERRAFORM_VALIDATE_OPTIONS=()
 # Terraform validate options.
 declare -g -a DUCT_TERRAFORM_VALIDATE_OPTIONS=( ${DUCT_TERRAFORM_VALIDATE_OPTIONS[@]:-${_DUCT_TERRAFORM_VALIDATE_OPTIONS[@]}} )
 
+# Enable `duct terraform fail` run.
+declare -g DUCT_TERRAFORM_VALIDATE_FAIL="${DUCT_TERRAFORM_VALIDATE_FAIL:-false}"
+
 # deps:
 # intl: false
 # life: main
@@ -374,7 +376,11 @@ __duct_terraform_validate() {
 
   __duct_terraform_init -backend=false
   __duct_terraform_run validate "${DUCT_TERRAFORM_VALIDATE_OPTIONS[@]}" "${TF_OPTS[@]}"
-  return
+
+  if [[ "$DUCT_TERRAFORM_VALIDATE_FAIL" == true ]]
+  then
+    __duct_terraform_fail
+  fi
 }
 readonly -f __duct_terraform_validate
 
@@ -951,28 +957,41 @@ readonly -f __duct_terraform_tfsec
 
 # terraform fail
 
-# Messages to find and mark the terraform run as failed.
-declare -g -a DUCT_TERRAFORM_FAIL_MESSAGES=()
+# Messages to find and mark the terraform run as failed (defaults).
+declare -r -a _DUCT_TERRAFORM_FAIL_MESSAGES=()
 
-# deps: duct-msg duct-gnu
+# shellcheck disable=SC2206
+# Messages to find and mark the terraform run as failed.
+declare -g -a DUCT_TERRAFORM_FAIL_MESSAGES=( ${DUCT_TERRAFORM_FAIL_MESSAGES[@]:-${_DUCT_TERRAFORM_FAIL_MESSAGES[@]}} )
+
+# deps: duct-msg
 # intl: true
 # life: main
-# desc: Find additional messages to mark the terraform run fail.
+# desc: Find additional messages to mark the terraform run as failed.
 # opts:
 __duct_terraform_fail() {
+  local -a TF_OUT
   local TF_FAIL=0
 
-  if [[ -f "$DUCT_TERRAFORM_RUN_OUTPUT" ]]
+  if [[ -s "$DUCT_TERRAFORM_RUN_OUTPUT" ]]
   then
-    for FAIL in "${DUCT_TERRAFORM_FAIL_MESSAGES[@]}"
+    mapfile -t -n 0 TF_OUT < "$DUCT_TERRAFORM_RUN_OUTPUT"
+
+    for LINE in "${TF_OUT[@]}"
     do
-      if __duct_gnu_grep -qoF "$FAIL" "$DUCT_TERRAFORM_RUN_OUTPUT"
-      then
-        __duct_msg e "got '$FAIL' in terraform output!"
-        (( TF_FAIL+=1 ))
-      else
-        continue
-      fi
+      # remove ANSI escape codes
+      shopt -s extglob
+      LINE="${LINE//$'\e'\[*([0-9;])m/}"
+      shopt -u extglob
+
+      for FAIL in "${DUCT_TERRAFORM_FAIL_MESSAGES[@]}"
+      do
+        if [[ "$LINE" =~ $FAIL ]]
+        then
+          __duct_msg e "found: '$LINE'"
+          (( TF_FAIL+=1 ))
+        fi
+      done
     done
 
     if [[ "$TF_FAIL" -gt 0 ]]
