@@ -260,6 +260,9 @@ declare -g DUCT_TERRAFORM_APPLY_JSON="${DUCT_TERRAFORM_APPLY_JSON:-true}"
 # Apply JSON filename.
 declare -g DUCT_TERRAFORM_APPLY_JSON_FILE="${DUCT_TERRAFORM_APPLY_JSON_FILE:-"terraform-apply.json"}"
 
+# Enable/disable use of the plan file.
+declare -g DUCT_TERRAFORM_APPLY_USE_PLAN="${DUCT_TERRAFORM_APPLY_USE_PLAN:-true}"
+
 # Enable/disable removal of the plan file.
 declare -g DUCT_TERRAFORM_APPLY_REMOVE_PLAN="${DUCT_TERRAFORM_APPLY_REMOVE_PLAN:-true}"
 
@@ -273,7 +276,7 @@ __duct_terraform_apply() {
 
   __duct_terraform_init
 
-  if [[ -s "$DUCT_TERRAFORM_PLAN_FILE" ]]
+  if [[ "$DUCT_TERRAFORM_APPLY_USE_PLAN" == true ]] && [[ -s "$DUCT_TERRAFORM_PLAN_FILE" ]]
   then
     TF_OPTS+=( "$DUCT_TERRAFORM_PLAN_FILE" )
   fi
