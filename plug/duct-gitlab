@@ -163,7 +163,7 @@ __duct_gitlab_paginate() {
       break
     fi
 
-    GL_API_URL="${GL_API_URL//page=*/page=${GL_PAGE}}"
+    GL_API_URL="${GL_API_URL//page=*/page=${GL_PAGE}}&per_page=${GL_PER_PAGE}"
   done
 
   if [[ -n "$GL_JQ_QUERY" ]]
