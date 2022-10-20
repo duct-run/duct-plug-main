@@ -690,7 +690,7 @@ __duct_terraform_set() {
 
   for TF_INDEX in "${!TF_DATA[@]}"
   do
-    if [[ "${TF_DATA[$TF_INDEX]}" =~ [[:space:]]+required_version[[:space:]]+=[[:space:]]+\"?((=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+),?[[:space:]]?(=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+)?)\"? ]]
+    if [[ "${TF_DATA[$TF_INDEX]}" =~ [^#][[:space:]]+required_version[[:space:]]+=[[:space:]]+\"?((=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+),?[[:space:]]?(=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+)?)\"? ]]
     then
       VER="${BASH_REMATCH[1]}"
       STR="${TF_DATA[$TF_INDEX]}"
@@ -747,9 +747,9 @@ __duct_terraform_provider_set() {
 
   for TF_INDEX in "${!TF_DATA[@]}"
   do
-    if [[ "${TF_DATA[$TF_INDEX]}" =~ [[:space:]]+source[[:space:]]+=[[:space:]]+\"?($TF_PROVIDER_SET)\"? ]]
+    if [[ "${TF_DATA[$TF_INDEX]}" =~ [^#][[:space:]]+source[[:space:]]+=[[:space:]]+\"?($TF_PROVIDER_SET)\"? ]]
     then
-      if [[ "${TF_DATA[$TF_INDEX+1]}" =~ [[:space:]]+version[[:space:]]+=[[:space:]]+\"?((=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+),?[[:space:]]?(=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+)?)\"? ]]
+      if [[ "${TF_DATA[$TF_INDEX+1]}" =~ [^#][[:space:]]+version[[:space:]]+=[[:space:]]+\"?((=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+),?[[:space:]]?(=|!=|>|>=|<|<=|~>)?[[:space:]]?([0-9.]+)?)\"? ]]
       then
         VER="${BASH_REMATCH[1]}"
         STR="${TF_DATA[$TF_INDEX+1]}"
