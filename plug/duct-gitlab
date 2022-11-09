@@ -168,9 +168,9 @@ __duct_gitlab_paginate() {
 
   if [[ -n "$GL_JQ_QUERY" ]]
   then
-    printf "%b\n" "${GL_DATA[@]}" | jq -M -e -r "$GL_JQ_QUERY"
+    printf "%s" "${GL_DATA[@]}" | jq -M -e -r "$GL_JQ_QUERY"
   else
-    printf "%b\n" "${GL_DATA[@]}"
+    printf "%s" "${GL_DATA[@]}"
   fi
 
   return
