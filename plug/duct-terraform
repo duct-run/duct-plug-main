@@ -710,7 +710,7 @@ __duct_terraform_set() {
       if [[ "$VER" != "$TF_VERSION_SET" ]]
       then
         __duct_msg n "set terraform version from '$VER' to '$TF_VERSION_SET' ($TF_VERSION_FILE:$(( TF_INDEX + 1 )))"
-        TF_DATA[$TF_INDEX]="${STR//$VER/$TF_VERSION_SET}"
+        TF_DATA[TF_INDEX]="${STR//$VER/$TF_VERSION_SET}"
       else
         __duct_msg n "terraform version is '$TF_VERSION_SET'"
         return
@@ -773,7 +773,7 @@ __duct_terraform_provider_set() {
         if [[ "$VER" != "$TF_VERSION_SET" ]]
         then
           __duct_msg n "set $TF_PROVIDER_SET version from '$VER' to '$TF_VERSION_SET' ($TF_VERSION_FILE:$(( TF_INDEX + 2 )))"
-          TF_DATA[$TF_INDEX+1]="${STR//$VER/$TF_VERSION_SET}"
+          TF_DATA[TF_INDEX+1]="${STR//$VER/$TF_VERSION_SET}"
         else
           __duct_msg n "$TF_PROVIDER_SET version is '$TF_VERSION_SET'"
           return
