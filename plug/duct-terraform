@@ -163,7 +163,13 @@ __duct_terraform_config() {
         __duct_run mkdir -p "$TF_PLUGIN_CACHE_DIR"
       fi
     fi
-    __duct_msg d "add $TF_CONFIG"
+
+    if [[ "$TF_CONFIG" =~ token ]]
+    then
+      __duct_msg d "add [SECRET]"
+    else
+      __duct_msg d "add $TF_CONFIG"
+    fi
     echo "$TF_CONFIG"
   done > "$DUCT_TERRAFORM_CONFIG_FILE"
 }
