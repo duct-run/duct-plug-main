@@ -166,7 +166,7 @@ __duct_terraform_config() {
 
     if [[ "$TF_CONFIG" =~ token ]]
     then
-      __duct_msg d "add [SECRET]"
+      __duct_msg d "add [TFSECRET]"
     else
       __duct_msg d "add $TF_CONFIG"
     fi
