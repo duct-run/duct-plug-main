@@ -35,6 +35,25 @@ declare -g DUCT_GITLAB_SERVER="${DUCT_GITLAB_SERVER:-${GITLAB_SERVER:-${CI_SERVE
 # GitLab API URL (inherit `CI_API_V4_URL` if available).
 declare -g DUCT_GITLAB_API="${DUCT_GITLAB_API:-${CI_API_V4_URL:-"${DUCT_GITLAB_SERVER}/api/v4"}}"
 
+# gitlab ci check
+
+# deps: duct-msg
+# intl: false
+# life: main
+# desc: Check and fail if we're not running within a GitLab CI pipeline.
+# opts:
+__duct_gitlab_ci_check() {
+  if [[ "$DUCT_GITLAB_PIPELINE" == true ]]
+  then
+    __duct_msg d "active pipeline"
+    return 0
+  else
+    __duct_msg e "not in pipeline"
+    return 1
+  fi
+}
+readonly -f __duct_gitlab_ci_check
+
 # gitlab git config
 
 # deps: duct-git duct-msg
