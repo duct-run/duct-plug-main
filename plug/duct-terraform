@@ -1108,12 +1108,3 @@ __duct_terraform_out2json() {
   return
 }
 readonly -f __duct_terraform_out2json
-
-# FIXME:
-__duct_terraform_provider() {
-  :
-}
-
-__duct_terraform_compare() {
-  :
-}
