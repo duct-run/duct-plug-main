@@ -1,0 +1,86 @@
+# vim: set ft=sh syn=bash :
+# shellcheck shell=bash
+
+#
+# Copyright (C) 2023 Chris 'sh0shin' Frage
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License, version 3,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+
+# @plug duct-jq
+# @desc JSON processor.
+
+# @func duct jq load
+
+# @fvar List of duct-jq requirements.
+declare -r -a _DUCT_JQ_LOAD_REQUIREMENTS=(
+  jq
+)
+
+# @fvar Minimum supported jq version.
+declare -r _DUCT_JQ_LOAD_JQ_VERSION="1.6"
+
+# @desc Check duct-jq requirements.
+# @intl true
+# @life main
+# @deps duct-util
+# @opts
+__duct_jq_load() {
+  __duct_intl
+
+  local JQ_LOAD_RC=0
+
+  __duct_bin_check "${_DUCT_JQ_LOAD_REQUIREMENTS[@]}" || JQ_LOAD_RC=$?
+  __duct_ver_check "jq" "$_DUCT_JQ_LOAD_JQ_VERSION" 1 || JQ_LOAD_RC=$?
+
+  return $JQ_LOAD_RC
+}
+readonly -f __duct_jq_load
+
+# @func duct jq
+
+declare -r -a _DUCT_JQ_OPTIONS=(
+  -M
+  -e
+  -r
+)
+declare -g -a DUCT_JQ_OPTIONS=( "${DUCT_JQ_OPTIONS[@]:-${_DUCT_JQ_OPTIONS[@]}}" )
+
+declare -g DUCT_JQ_FILTER="${DUCT_JQ_FILTER:-}"
+
+# @opts [jq-options|jq-filter]
+__duct_jq() {
+  local JQ_OPTS=( "$@" )
+
+  local -a JQ_FILTER
+  local -a JQ_IN
+  local JQ_ITEM
+
+  if [[ -n "$DUCT_JQ_FILTER" ]]
+  then
+    readarray -t -n 0 JQ_FILTER <<< "$DUCT_JQ_FILTER"
+  fi
+
+  for JQ_ITEM in "${JQ_OPTS[@]}"
+  do
+    if [[ -f "$JQ_ITEM" ]]
+    then
+      __duct_run jq "${DUCT_JQ_OPTIONS[@]}" "${JQ_FILTER[@]}" "${JQ_OPTS[@]}"
+      return
+    fi
+  done
+
+  readarray -t -n 0 JQ_IN
+  __duct_run jq "${DUCT_JQ_OPTIONS[@]}" "${JQ_OPTS[@]}" "${JQ_FILTER[@]}" <<< "${JQ_IN[@]}"
+}
+readonly -f __duct_jq
