@@ -20,6 +20,29 @@
 # duct-python
 # Python operations.
 
+# @func duct python load
+
+# @fvar List of duct-python requirements.
+declare -r -a _DUCT_PYTHON_LOAD_REQUIREMENTS=(
+  python3
+  pip3
+)
+
+# @desc Check duct-python requirements.
+# @intl true
+# @life main
+# @deps duct-util
+# @opts
+__duct_python_load() {
+  __duct_intl
+
+  local PYTHON_LOAD_RC=0
+
+  __duct_bin_check "${_DUCT_PYTHON_LOAD_REQUIREMENTS[@]}" || PYTHON_LOAD_RC=$?
+
+  return $PYTHON_LOAD_RC
+}
+
 # python pip
 
 # Python pip options (defaults).
