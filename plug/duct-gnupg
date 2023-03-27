@@ -17,7 +17,28 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-# duct-gnupg
-# GNU Privacy Guard.
+# @plug duct-gnupg
+# @desc GNU Privacy Guard.
 
-# TODO
+# @func duct gnupg load
+
+# @fvar List of duct-gnupg requirements.
+declare -r -a _DUCT_GNUPG_LOAD_REQUIREMENTS=(
+  gpg
+  gpg-agent
+)
+
+# @desc Check duct-gnupg requirements.
+# @intl true
+# @life main
+# @deps duct-util
+# @opts
+__duct_gnupg_load() {
+  __duct_intl
+
+  local GNUPG_LOAD_RC=0
+
+  __duct_bin_check "${_DUCT_GNUPG_LOAD_REQUIREMENTS[@]}" || GNUPG_LOAD_RC=$?
+
+  return $GNUPG_LOAD_RC
+}
