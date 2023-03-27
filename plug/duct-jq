@@ -41,7 +41,11 @@ __duct_jq_load() {
   local JQ_LOAD_RC=0
 
   __duct_bin_check "${_DUCT_JQ_LOAD_REQUIREMENTS[@]}" || JQ_LOAD_RC=$?
-  __duct_ver_check "jq" "$_DUCT_JQ_LOAD_JQ_VERSION" 1 || JQ_LOAD_RC=$?
+
+  if [[ "$JQ_LOAD_RC" -eq 0 ]]
+  then
+    __duct_ver_check "jq" "$_DUCT_JQ_LOAD_JQ_VERSION" 1 || JQ_LOAD_RC=$?
+  fi
 
   return $JQ_LOAD_RC
 }
