@@ -49,7 +49,9 @@ declare -g -a DUCT_PYTHON_PIP_REQUIREMENTS=( ${DUCT_PYTHON_PIP_REQUIREMENTS[@]:-
 # opts: [requirements|requirements-file]
 __duct_python_pip() {
   local -a PIP_REQ=( "${@:-${DUCT_PYTHON_PIP_REQUIREMENTS[@]}}" )
+
   local -a PIP_REQ_FILES=()
+  local PIP_ITEM
 
   if [[ "${#PIP_REQ}" -eq 0 ]]
   then
@@ -78,13 +80,14 @@ __duct_python_pip() {
     __duct_run source "${DUCT_PYTHON_VENV_PATH}/bin/activate"
   fi
 
-  for REQ in "${PIP_REQ[@]}"
+  for PIP_ITEM in "${PIP_REQ[@]}"
   do
-    if [[ -f "$REQ" ]]
+    if [[ -f "$PIP_ITEM" ]]
     then
-      __duct_msg d "adding requirements file $REQ"
-      PIP_REQ_FILES+=( "$REQ" )
-      readarray -t PIP_REQ < <( __duct_array_strip "^${REQ}$" "${PIP_REQ[@]}" )
+      __duct_msg d "adding requirements file $PIP_ITEM"
+      PIP_REQ_FILES+=( "$PIP_ITEM" )
+
+      __duct_array_strip "PIP_REQ" "^${PIP_ITEM}$"
     fi
   done
 
@@ -94,10 +97,10 @@ __duct_python_pip() {
     __duct_run pip install "${DUCT_PYTHON_PIP_OPTIONS[@]}" "${PIP_REQ[@]}"
   fi
 
-  for REQ_FILE in "${PIP_REQ_FILES[@]}"
+  for PIP_ITEM in "${PIP_REQ_FILES[@]}"
   do
-    __duct_msg n "installing from $REQ_FILE"
-    __duct_run pip install "${DUCT_PYTHON_PIP_OPTIONS[@]}" --requirement "$REQ_FILE"
+    __duct_msg n "installing from $PIP_ITEM"
+    __duct_run pip install "${DUCT_PYTHON_PIP_OPTIONS[@]}" --requirement "$PIP_ITEM"
   done
 }
 readonly -f __duct_python_pip
