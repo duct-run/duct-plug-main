@@ -17,8 +17,32 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-# duct-ssh
-# OpenSSH stuff.
+# @plug duct-ssh
+# @desc OpenSSH stuff.
+
+# @func duct ssh load
+
+# @fvar List of duct-ssh requirements.
+declare -r _DUCT_SSH_LOAD_REQUIREMENTS=(
+  ssh-add
+  ssh-agent
+  ssh-keygen
+)
+
+# @desc Check duct-ssh requirements.
+# @intl true
+# @life main
+# @deps
+# @opts
+__duct_ssh_load() {
+  __duct_intl
+
+  local SSH_LOAD_RC=0
+
+  __duct_bin_check "${_DUCT_SSH_LOAD_REQUIREMENTS[@]}" || SSH_LOAD_RC=$?
+
+  return $SSH_LOAD_RC
+}
 
 # ssh keygen
 
