@@ -17,36 +17,13 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-# duct-python
-# Python operations.
+# @plug duct-python
+# @desc Python operations.
 
-# @func duct python load
+# @func duct python pip
 
-# @fvar List of duct-python requirements.
-declare -r -a _DUCT_PYTHON_LOAD_REQUIREMENTS=(
-  python3
-  pip3
-)
-
-# @desc Check duct-python requirements.
-# @intl true
-# @life main
-# @deps duct-util
-# @opts
-__duct_python_load() {
-  __duct_intl
-
-  local PYTHON_LOAD_RC=0
-
-  __duct_bin_check "${_DUCT_PYTHON_LOAD_REQUIREMENTS[@]}" || PYTHON_LOAD_RC=$?
-
-  return $PYTHON_LOAD_RC
-}
-
-# python pip
-
-# Python pip options (defaults).
-declare -a -r _DUCT_PYTHON_PIP_OPTIONS=(
+# @fvar Python pip options (defaults).
+declare -r -a _DUCT_PYTHON_PIP_OPTIONS=(
   --isolated
   --no-cache-dir
   --no-compile
@@ -55,21 +32,24 @@ declare -a -r _DUCT_PYTHON_PIP_OPTIONS=(
   --upgrade
 )
 
-# Python pip requirements to install (defaults).
-declare -a -r _DUCT_PYTHON_PIP_REQUIREMENTS=()
+# @fvar Python pip requirements to install (defaults).
+declare -r -a _DUCT_PYTHON_PIP_REQUIREMENTS=()
 
-# Python pip options.
+# @fvar Python pip binary.
+declare -g DUCT_PYTHON_PIP_BIN="${DUCT_PYTHON_PIP_BIN:-"pip3"}"
+
+# @fvar Python pip options.
 declare -g -a DUCT_PYTHON_PIP_OPTIONS=( "${DUCT_PYTHON_PIP_OPTIONS[@]:-${_DUCT_PYTHON_PIP_OPTIONS[@]}}" )
 
 # shellcheck disable=SC2206
-# Python pip requirements to install (may also be a requirements file).
+# @fvar Python pip requirements to install (may also be a requirements file).
 declare -g -a DUCT_PYTHON_PIP_REQUIREMENTS=( ${DUCT_PYTHON_PIP_REQUIREMENTS[@]:-${_DUCT_PYTHON_PIP_REQUIREMENTS[@]}} )
 
-# deps: duct-msg duct-run
-# intl: false
-# life: core
-# desc: Install or upgrade Python packages in a virtual environment (uses `DUCT_PYTHON_VENV_PATH`).
-# opts: [requirements|requirements-file]
+# @desc Install or upgrade Python packages in a virtual environment (uses `DUCT_PYTHON_VENV_PATH`).
+# @intl false
+# @life main
+# @deps duct-array duct-msg duct-run
+# @opts [requirements|requirements-file]
 __duct_python_pip() {
   local -a PIP_REQ=( "${@:-${DUCT_PYTHON_PIP_REQUIREMENTS[@]}}" )
 
@@ -117,54 +97,54 @@ __duct_python_pip() {
   if [[ "${#PIP_REQ[@]}" -gt 0 ]]
   then
     __duct_msg n "installing ${PIP_REQ[*]}"
-    __duct_run pip install "${DUCT_PYTHON_PIP_OPTIONS[@]}" "${PIP_REQ[@]}"
+    __duct_run "$DUCT_PYTHON_PIP_BIN" install "${DUCT_PYTHON_PIP_OPTIONS[@]}" "${PIP_REQ[@]}"
   fi
 
   for PIP_ITEM in "${PIP_REQ_FILES[@]}"
   do
     __duct_msg n "installing from $PIP_ITEM"
-    __duct_run pip install "${DUCT_PYTHON_PIP_OPTIONS[@]}" --requirement "$PIP_ITEM"
+    __duct_run "$DUCT_PYTHON_PIP_BIN" install "${DUCT_PYTHON_PIP_OPTIONS[@]}" --requirement "$PIP_ITEM"
   done
 }
 readonly -f __duct_python_pip
 
-# python venv
+# @func duct python venv
 
-# Python venv options (defaults).
-declare -a -r _DUCT_PYTHON_VENV_OPTIONS=(
+# @fvar Python venv options (defaults).
+declare -r -a _DUCT_PYTHON_VENV_OPTIONS=(
   --copies
 )
 
-# Base packages to install or upgrade in the venv (defaults).
-declare -a -r _DUCT_PYTHON_VENV_PACKAGES=(
+# @fvar Base packages to install or upgrade in the venv (defaults).
+declare -r -a _DUCT_PYTHON_VENV_PACKAGES=(
   pip
   setuptools
   wheel
 )
 
-# Clear/remove existing Python venv.
+# @fvar Clear/remove existing Python venv.
 declare -g DUCT_PYTHON_VENV_CLEAR=${DUCT_PYTHON_VENV_CLEAR:-false}
 
-# Deactivate Python venv after creation.
+# @fvar Deactivate Python venv after creation.
 declare -g DUCT_PYTHON_VENV_DEACTIVATE=${DUCT_PYTHON_VENV_DEACTIVATE:-false}
 
-# Python interpreter.
-declare -g DUCT_PYTHON_VENV_INTERPRETER=${DUCT_PYTHON_VENV_INTERPRETER:-"python3"}
+# @fvar Python binary/interpreter.
+declare -g DUCT_PYTHON_VENV_BIN=${DUCT_PYTHON_VENV_BIN:-"python3"}
 
-# Python venv options.
+# @fvar Python venv options.
 declare -g -a DUCT_PYTHON_VENV_OPTIONS=( "${DUCT_PYTHON_VENV_OPTIONS[@]:-${_DUCT_PYTHON_VENV_OPTIONS[@]}}" )
 
-# Base packages to install or upgrade in the venv.
+# @fvar Base packages to install or upgrade in the venv.
 declare -g -a DUCT_PYTHON_VENV_PACKAGES=( "${DUCT_PYTHON_VENV_PACKAGES[@]:-${_DUCT_PYTHON_VENV_PACKAGES[@]}}" )
 
 # Path to the Python venv
 declare -g DUCT_PYTHON_VENV_PATH="${TMPDIR:-"/tmp"}/duct-python-venv"
 
-# deps: duct-msg duct-run duct-util
-# intl: false
-# life: core
-# desc: Create or upgrade a Python **v**irtual **env**ironment and install base packages.
-# opts: [venv-path]
+# @desc Create or upgrade a Python **v**irtual **env**ironment and install base packages.
+# @intl false
+# @life main
+# @deps duct-msg duct-run duct-util
+# @opts [venv-path]
 __duct_python_venv() {
   local VENV_PATH="${1:-"$DUCT_PYTHON_VENV_PATH"}"
   local -a VENV_OPTS=()
@@ -190,10 +170,8 @@ __duct_python_venv() {
     fi
   fi
 
-  __duct_bin_check "${DUCT_PYTHON_VENV_INTERPRETER}"
-
   __duct_msg n "$VENV_MSG $VENV_PATH"
-  __duct_run "$DUCT_PYTHON_VENV_INTERPRETER" -m venv "${DUCT_PYTHON_VENV_OPTIONS[@]}" "${VENV_OPTS[@]}" "$VENV_PATH" || VENV_RC=$?
+  __duct_run "$DUCT_PYTHON_VENV_BIN" -m venv "${DUCT_PYTHON_VENV_OPTIONS[@]}" "${VENV_OPTS[@]}" "$VENV_PATH" || VENV_RC=$?
 
   if [[ -d "$VENV_PATH/lib" ]]
   then
@@ -221,4 +199,26 @@ __duct_python_venv() {
 
   return $VENV_RC
 }
-readonly -f __duct_python_venv
+
+# @func duct python load
+
+# @fvar List of duct-python requirements.
+declare -r -a _DUCT_PYTHON_LOAD_REQUIREMENTS=(
+  "${DUCT_PYTHON_VENV_BIN}"
+  "${DUCT_PYTHON_PIP_BIN}"
+)
+
+# @desc Check duct-python requirements.
+# @intl true
+# @life main
+# @deps duct-util
+# @opts
+__duct_python_load() {
+  __duct_intl
+
+  local PYTHON_LOAD_RC=0
+
+  __duct_bin_check "${_DUCT_PYTHON_LOAD_REQUIREMENTS[@]}" || PYTHON_LOAD_RC=$?
+
+  return $PYTHON_LOAD_RC
+}
