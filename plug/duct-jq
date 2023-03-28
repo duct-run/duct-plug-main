@@ -20,11 +20,59 @@
 # @plug duct-jq
 # @desc JSON processor.
 
+# @func duct jq
+
+# @fvar jq options (default).
+declare -r -a _DUCT_JQ_OPTIONS=(
+  -M
+  -e
+  -r
+)
+
+# @fvar jq binary.
+declare -g DUCT_JQ_BIN="${DUCT_JQ_BIN:-"jq"}"
+
+# @fvar jq options.
+declare -g -a DUCT_JQ_OPTIONS=( "${DUCT_JQ_OPTIONS[@]:-${_DUCT_JQ_OPTIONS[@]}}" )
+
+# @fvar jq filter.
+declare -g DUCT_JQ_FILTER="${DUCT_JQ_FILTER:-}"
+
+# @desc Run jq processor.
+# @intl false
+# @life main
+# @deps duct-msg duct-run
+# @opts [jq-options|jq-filter]
+__duct_jq() {
+  local JQ_OPTS=( "$@" )
+
+  local -a JQ_FILTER
+  local -a JQ_IN
+  local JQ_ITEM
+
+  if [[ -n "$DUCT_JQ_FILTER" ]]
+  then
+    readarray -t -n 0 JQ_FILTER <<< "$DUCT_JQ_FILTER"
+  fi
+
+  for JQ_ITEM in "${JQ_OPTS[@]}"
+  do
+    if [[ -f "$JQ_ITEM" ]]
+    then
+      __duct_run "$DUCT_JQ_BIN" "${DUCT_JQ_OPTIONS[@]}" "${JQ_FILTER[@]}" "${JQ_OPTS[@]}"
+      return
+    fi
+  done
+
+  readarray -t -n 0 JQ_IN
+  __duct_run "$DUCT_JQ_BIN" "${DUCT_JQ_OPTIONS[@]}" "${JQ_OPTS[@]}" "${JQ_FILTER[@]}" <<< "${JQ_IN[@]}"
+}
+
 # @func duct jq load
 
 # @fvar List of duct-jq requirements.
 declare -r -a _DUCT_JQ_LOAD_REQUIREMENTS=(
-  jq
+  "${DUCT_JQ_BIN}"
 )
 
 # @fvar Minimum supported jq version.
@@ -44,47 +92,8 @@ __duct_jq_load() {
 
   if [[ "$JQ_LOAD_RC" -eq 0 ]]
   then
-    __duct_ver_check "jq" "$_DUCT_JQ_LOAD_JQ_VERSION" 1 || JQ_LOAD_RC=$?
+    __duct_ver_check "$DUCT_JQ_BIN" "$_DUCT_JQ_LOAD_JQ_VERSION" 1 || JQ_LOAD_RC=$?
   fi
 
   return $JQ_LOAD_RC
 }
-readonly -f __duct_jq_load
-
-# @func duct jq
-
-declare -r -a _DUCT_JQ_OPTIONS=(
-  -M
-  -e
-  -r
-)
-declare -g -a DUCT_JQ_OPTIONS=( "${DUCT_JQ_OPTIONS[@]:-${_DUCT_JQ_OPTIONS[@]}}" )
-
-declare -g DUCT_JQ_FILTER="${DUCT_JQ_FILTER:-}"
-
-# @opts [jq-options|jq-filter]
-__duct_jq() {
-  local JQ_OPTS=( "$@" )
-
-  local -a JQ_FILTER
-  local -a JQ_IN
-  local JQ_ITEM
-
-  if [[ -n "$DUCT_JQ_FILTER" ]]
-  then
-    readarray -t -n 0 JQ_FILTER <<< "$DUCT_JQ_FILTER"
-  fi
-
-  for JQ_ITEM in "${JQ_OPTS[@]}"
-  do
-    if [[ -f "$JQ_ITEM" ]]
-    then
-      __duct_run jq "${DUCT_JQ_OPTIONS[@]}" "${JQ_FILTER[@]}" "${JQ_OPTS[@]}"
-      return
-    fi
-  done
-
-  readarray -t -n 0 JQ_IN
-  __duct_run jq "${DUCT_JQ_OPTIONS[@]}" "${JQ_OPTS[@]}" "${JQ_FILTER[@]}" <<< "${JQ_IN[@]}"
-}
-readonly -f __duct_jq
