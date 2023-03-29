@@ -17,46 +17,23 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-# duct-git
-# Git operations.
+# @plug duct-git
+# @desc Git operations.
 
-# Git working directory.
+# @pvar Git binary.
+declare -g DUCT_GIT_BINARY="${DUCT_GIT_BINARY:-"git"}"
+
+# @pvar Git LFS binary.
+declare -g DUCT_GIT_LFS_BINARY="${DUCT_GIT_LFS_BINARY:-"git-lfs"}"
+
+# @pvar Git working directory.
 declare -g DUCT_GIT_WORKDIR="${DUCT_GIT_WORKDIR:-"$PWD"}"
 
-# Default git branch name.
+# @pvar Default git branch name.
 declare -g DUCT_GIT_BRANCH="${DUCT_GIT_BRANCH:-"main"}"
 
-# Default git remote name.
+# @pvar Default git remote name.
 declare -g DUCT_GIT_REMOTE="${DUCT_GIT_REMOTE:-"origin"}"
-
-# git load
-
-# @fvar List of duct-git requirements.
-declare -r -a _DUCT_GIT_LOAD_REQUIREMENTS=(
-  git
-)
-
-# @fvar List of optional duct-git requirements.
-declare -r -a _DUCT_GIT_LOAD_OPTIONALS=(
-  git-lfs
-)
-
-# @fvar Minimum supported git version.
-declare -r _DUCT_GIT_LOAD_GIT_VERSION="2.25.0"
-
-__duct_git_load() {
-  __duct_intl
-
-  local GIT_LOAD_RC=0
-
-  __duct_bin_check "${_DUCT_GIT_LOAD_REQUIREMENTS[@]}" || GIT_LOAD_RC=$?
-  __duct_ver_check "git" "$_DUCT_GIT_LOAD_GIT_VERSION" 3 || GIT_LOAD_RC=$?
-
-  DUCT_BIN_CHECK_WARNING=true \
-  __duct_bin_check "${_DUCT_GIT_LOAD_OPTIONALS[@]}"
-
-  return $GIT_LOAD_RC
-}
 
 # git local head
 
@@ -1481,4 +1458,38 @@ __duct_git_changes() {
   then
     printf "%b\n" "${DUCT_GIT_CHANGES[@]}"
   fi
+}
+
+# @func duct git load
+
+# @fvar List of duct-git requirements.
+declare -r -a _DUCT_GIT_LOAD_REQUIREMENTS=(
+  "$DUCT_GIT_BINARY"
+)
+
+# @fvar List of optional duct-git requirements.
+declare -r -a _DUCT_GIT_LOAD_OPTIONALS=(
+  "$DUCT_GIT_LFS_BINARY"
+)
+
+# @fvar Minimum supported git version.
+declare -r _DUCT_GIT_LOAD_GIT_VERSION="2.25.0"
+
+# @desc Check duct-git requirements.
+# @intl true
+# @life main
+# @deps
+# @opts
+__duct_git_load() {
+  __duct_intl
+
+  local GIT_LOAD_RC=0
+
+  __duct_bin_check "${_DUCT_GIT_LOAD_REQUIREMENTS[@]}" || GIT_LOAD_RC=$?
+  __duct_ver_check "$DUCT_GIT_BINARY" "$_DUCT_GIT_LOAD_GIT_VERSION" 3 || GIT_LOAD_RC=$?
+
+  DUCT_BIN_CHECK_WARNING=true \
+  __duct_bin_check "${_DUCT_GIT_LOAD_OPTIONALS[@]}"
+
+  return $GIT_LOAD_RC
 }
