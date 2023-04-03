@@ -426,7 +426,7 @@ __duct_terraform_backend() {
     if [[ -n "$DUCT_TERRAFORM_BACKEND_TYPE" && "${#DUCT_TERRAFORM_BACKEND_CONFIG[@]}" -ge 1 ]]
     then
 
-      if [[ -n "$DUCT_TERRAFORM_BACKEND_CHDIR" ]]
+      if [[ -n "$DUCT_TERRAFORM_BACKEND_CHDIR" && -d "$DUCT_TERRAFORM_BACKEND_CHDIR" ]]
       then
         TF_BACKEND_FILE="${DUCT_TERRAFORM_BACKEND_CHDIR}/${DUCT_TERRAFORM_BACKEND_FILE}"
       else
