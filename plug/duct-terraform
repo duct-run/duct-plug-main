@@ -449,7 +449,7 @@ __duct_terraform_backend() {
       for TF_BACKEND_ITEM in "${DUCT_TERRAFORM_BACKEND_CONFIG[@]}"
       do
         TF_BACKEND_KEY="$( __duct_trim "${TF_BACKEND_ITEM%%=*}" )"
-        TF_BACKEND_VAL="$( __duct_trim "${TF_BACKEND_ITEM##*=}" )"
+        TF_BACKEND_VAL="$( __duct_trim "${TF_BACKEND_ITEM#*=}" )"
 
         if [[ "$DUCT_TERRAFORM_BACKEND_MASK" == true && "$TF_BACKEND_KEY" =~ (password|token|secret) ]]
         then
