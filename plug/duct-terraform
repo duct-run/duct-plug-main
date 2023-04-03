@@ -454,6 +454,7 @@ __duct_terraform_backend() {
         if [[ "$DUCT_TERRAFORM_BACKEND_MASK" == true && "$TF_BACKEND_KEY" =~ (password|token|secret) ]]
         then
           __duct_msg d "${TF_BACKEND_KEY}=${DUCT_TERRAFORM_BACKEND_MASK_STRING}"
+          TF_BACKEND_VAL="$( __duct_debase64 "$TF_BACKEND_VAL" )"
         else
           __duct_msg d "${TF_BACKEND_KEY}=${TF_BACKEND_VAL}"
         fi
