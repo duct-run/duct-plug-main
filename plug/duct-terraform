@@ -39,13 +39,22 @@ declare -r -a _DUCT_TERRAFORM_CONFIG_OPTIONS=(
   "disable_checkpoint=true"
   "plugin_cache_dir=${DUCT_TERRAFORM_WRKDIR}/.terraform.d/plugin-cache"
 )
+
+declare -r -a _DUCT_TERRAFORM_CONFIG_CREDENTIALS=()
+
 declare -g _DUCT_TERRAFORM_CONFIG_DONE="${_DUCT_TERRAFORM_CONFIG_DONE:-false}"
 
 declare -g -a DUCT_TERRAFORM_CONFIG_OPTIONS=( "${DUCT_TERRAFORM_CONFIG_OPTIONS[@]:-${_DUCT_TERRAFORM_CONFIG_OPTIONS[@]}}" )
+
+# shellcheck disable=SC2206
+declare -g -a DUCT_TERRAFORM_CONFIG_CREDENTIALS=( ${DUCT_TERRAFORM_CONFIG_CREDENTIALS[@]:-${_DUCT_TERRAFORM_CONFIG_CREDENTIALS[@]}} )
+
 declare -g DUCT_TERRAFORM_CONFIG_FILE="${DUCT_TERRAFORM_CONFIG_FILE:-"$HOME/.terraformrc"}"
 declare -g DUCT_TERRAFORM_CONFIG_MASK="${DUCT_TERRAFORM_CONFIG_MASK:-true}"
 declare -g DUCT_TERRAFORM_CONFIG_MASK_STRING="${DUCT_TERRAFORM_CONFIG_MASK_STRING:-"[TFSECRET]"}"
-declare -g DUCT_TERRAFORM_CONFIG_REPLACE="${DUCT_TERRAFORM_CONFIG_REPLACE:-false}"
+declare -g DUCT_TERRAFORM_CONFIG_REPLACE="${DUCT_TERRAFORM_CONFIG_REPLACE:-true}"
+
+declare -g DUCT_TERRAFORM_CONFIG_NETWORK_MIRROR="${DUCT_TERRAFORM_CONFIG_NETWORK_MIRROR:-}"
 
 # @desc
 # @intl false
@@ -105,7 +114,7 @@ __duct_terraform_config() {
           __duct_msg d "${TF_CONFIG_KEY}${TF_CONFIG_SET}${TF_CONFIG_VAL}"
         fi
 
-        if [[ -n "$TF_CONFIG_SET" &&  "$TF_CONFIG_VAL" =~ (true|false|yes|no) ]]
+        if [[ -n "$TF_CONFIG_SET" && "$TF_CONFIG_VAL" =~ (true|false|yes|no) ]]
         then
           TF_CONFIG+=(
             "${TF_CONFIG_KEY}${TF_CONFIG_SET}${TF_CONFIG_VAL}"
@@ -122,6 +131,37 @@ __duct_terraform_config() {
           )
         fi
       done
+
+      if [[ -n "$DUCT_TERRAFORM_CONFIG_NETWORK_MIRROR" ]]
+      then
+        __duct_msg d "add network mirror $DUCT_TERRAFORM_CONFIG_NETWORK_MIRROR"
+
+        TF_CONFIG+=(
+          'provider_installation {'
+          'network_mirror {'
+          "url=\"$DUCT_TERRAFORM_CONFIG_NETWORK_MIRROR\""
+          '}'
+          '}'
+        )
+      fi
+
+      if [[ "${#DUCT_TERRAFORM_CONFIG_CREDENTIALS[@]}" -gt 0 ]]
+      then
+        for TF_CONFIG_ITEM in "${DUCT_TERRAFORM_CONFIG_CREDENTIALS[@]}"
+        do
+          TF_CONFIG_KEY="$( __duct_trim "${TF_CONFIG_ITEM%%::*}" )"
+          TF_CONFIG_VAL="$( __duct_trim "${TF_CONFIG_ITEM#*::}" )"
+          TF_CONFIG_VAL="$( __duct_debase64 "$TF_CONFIG_VAL" )"
+
+          __duct_msg d "add credentials for $TF_CONFIG_KEY"
+
+          TF_CONFIG+=(
+            "credentials \"$TF_CONFIG_KEY\" {"
+            "token=\"$TF_CONFIG_VAL\""
+            "}"
+          )
+        done
+      fi
 
       printf "%b\n" "${TF_CONFIG[@]}" | __duct_run "$DUCT_TERRAFORM_RUN_TERRAFORM_BINARY" fmt - > "$DUCT_TERRAFORM_CONFIG_FILE"
       _DUCT_TERRAFORM_CONFIG_DONE=true
