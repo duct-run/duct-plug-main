@@ -1091,7 +1091,7 @@ __duct_terraform_tfswitch() {
 
   if [[ "$TF_TFSWITCH_READ" -eq 0 ]]
   then
-    if [[ -n "$DUCT_TERRAFORM_TFSWITCH_DEFAULT" ]]
+    if [[ -n "$DUCT_TERRAFORM_TFSWITCH_DEFAULT" && "$DUCT_TERRAFORM_TFSWITCH_DEFAULT" != "latest" ]]
     then
       __duct_msg d "using version default $DUCT_TERRAFORM_TFSWITCH_DEFAULT"
       TF_TFSWITCH_OPTS+=( --default="$DUCT_TERRAFORM_TFSWITCH_DEFAULT" )
