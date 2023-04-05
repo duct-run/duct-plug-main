@@ -176,6 +176,7 @@ __duct_terraform_config() {
 declare -g _DUCT_TERRAFORM_RUN_VERSION_DONE="${_DUCT_TERRAFORM_RUN_VERSION_DONE:-false}"
 declare -g _DUCT_TERRAFORM_RUN_TFLINT_BINARY_VERSION_DONE="${_DUCT_TERRAFORM_RUN_TFLINT_BINARY_VERSION_DONE:-false}"
 declare -g _DUCT_TERRAFORM_RUN_TFSEC_BINARY_VERSION_DONE="${_DUCT_TERRAFORM_RUN_TFSEC_BINARY_VERSION_DONE:-false}"
+declare -g _DUCT_TERRAFORM_RUN_TFSWITCH_BINARY_VERSION_DONE="${_DUCT_TERRAFORM_RUN_TFSWITCH_BINARY_VERSION_DONE:-false}"
 
 declare -g DUCT_TERRAFORM_RUN_CHDIR="${DUCT_TERRAFORM_RUN_CHDIR:-$DUCT_TERRAFORM_CHDIR}"
 declare -g DUCT_TERRAFORM_RUN_OUTPUT="${DUCT_TERRAFORM_RUN_OUTPUT:-true}"
@@ -185,6 +186,8 @@ declare -g DUCT_TERRAFORM_RUN_TFLINT_BINARY="${DUCT_TERRAFORM_RUN_TFLINT_BINARY:
 declare -g DUCT_TERRAFORM_RUN_TFLINT_BINARY_VERSION="${DUCT_TERRAFORM_RUN_TFLINT_BINARY_VERSION:-false}"
 declare -g DUCT_TERRAFORM_RUN_TFSEC_BINARY="${DUCT_TERRAFORM_RUN_TFSEC_BINARY:-"tfsec"}"
 declare -g DUCT_TERRAFORM_RUN_TFSEC_BINARY_VERSION="${DUCT_TERRAFORM_RUN_TFSEC_BINARY_VERSION:-false}"
+declare -g DUCT_TERRAFORM_RUN_TFSWITCH_BINARY="${DUCT_TERRAFORM_RUN_TFSWITCH_BINARY:-"tfswitch"}"
+declare -g DUCT_TERRAFORM_RUN_TFSWITCH_BINARY_VERSION="${DUCT_TERRAFORM_RUN_TFSWITCH_BINARY_VERSION:-false}"
 declare -g DUCT_TERRAFORM_RUN_VERSION="${DUCT_TERRAFORM_RUN_VERSION:-false}"
 declare -g DUCT_TERRAFORM_RUN_WORKSPACE="${DUCT_TERRAFORM_RUN_WORKSPACE:-}"
 
@@ -229,6 +232,16 @@ __duct_terraform_run() {
     __duct_msg n "$TF_RUN_CMD" "${TF_RUN_OPTS[*]}"
     __duct_run "$DUCT_TERRAFORM_RUN_TFSEC_BINARY" "${TF_RUN_OPTS[@]}"
 
+  elif [[ "$TF_RUN_CMD" == "tfswitch" ]]
+  then
+    if [[ "$DUCT_TERRAFORM_RUN_TFSWITCH_BINARY_VERSION" == true && "$_DUCT_TERRAFORM_RUN_TFSWITCH_BINARY_VERSION_DONE" == false ]]
+    then
+      __duct_msg n "tfswitch --version"
+      __duct_run "$DUCT_TERRAFORM_RUN_TFSWITCH_BINARY"
+    fi
+
+    __duct_msg n "$TF_RUN_CMD" "${TF_RUN_OPTS[*]}"
+    __duct_run "$DUCT_TERRAFORM_RUN_TFSWITCH_BINARY" "${TF_RUN_OPTS[@]}"
   else
     # terraform chdir
     if [[ -n "$DUCT_TERRAFORM_RUN_CHDIR" && -d "$DUCT_TERRAFORM_RUN_CHDIR" ]]
@@ -1010,6 +1023,85 @@ __duct_terraform_tfsec() {
   fi
 
   __duct_terraform_run tfsec "${DUCT_TERRAFORM_TFSEC_OPTIONS[@]}" "${TF_TFSEC_OPTS[@]}" "${TF_TFSEC_FORMAT[@]}" "${TF_TFSEC_FILE[@]}"
+}
+
+# @func duct terraform tfswitch
+
+declare -r -a _DUCT_TERRAFORM_TFSWITCH_OPTIONS=()
+
+# shellcheck disable=SC2206
+declare -g -a DUCT_TERRAFORM_TFSWITCH_OPTIONS=( ${DUCT_TERRAFORM_TFSWITCH_OPTIONS[@]:-${_DUCT_TERRAFORM_TFSWITCH_OPTIONS[@]}} )
+declare -g DUCT_TERRAFORM_TFSWITCH_DEFAULT="${DUCT_TERRAFORM_TFSWITCH_DEFAULT:-}"
+declare -g DUCT_TERRAFORM_TFSWITCH_MIRROR="${DUCT_TERRAFORM_TFSWITCH_MIRROR:-"https://releases.hashicorp.com/terraform"}"
+declare -g DUCT_TERRAFORM_TFSWITCH_TO_WRKDIR="${DUCT_TERRAFORM_TFSWITCH_TO_WRKDIR:-true}"
+
+# @desc
+# @intl
+# @life
+# @deps
+# @opts
+__duct_terraform_tfswitch() {
+  local TF_TFSWITCH_OPTS=( "$@" )
+
+  local -a TF_TFSWITCH_DATA
+  local TF_TFSWITCH_FILE
+  local TF_TFSWITCH_ITEM
+  local TF_TFSWITCH_READ=0
+  local TF_TFSWITCH_VERSIONS=".terraform.versions"
+
+  if [[ ! "${TF_TFSWITCH_OPTS[*]}" =~ (--mirror=|-m) || ! "${DUCT_TERRAFORM_TFSWITCH_OPTIONS[*]}" =~ (--mirror=|-m) ]]
+  then
+    TF_TFSWITCH_OPTS+=( --mirror="$DUCT_TERRAFORM_TFSWITCH_MIRROR" )
+  fi
+
+  if [[ "$DUCT_TERRAFORM_TFSWITCH_TO_WRKDIR" == true ]]
+  then
+    if [[ ! -d "${DUCT_TERRAFORM_WRKDIR}/${TF_TFSWITCH_VERSIONS}" ]]
+    then
+      __duct_run mkdir -p "${DUCT_TERRAFORM_WRKDIR}/${TF_TFSWITCH_VERSIONS}"
+    fi
+
+    if [[ -d "${HOME}/${TF_TFSWITCH_VERSIONS}" ]]
+    then
+      __duct_run rm -r "${HOME}/${TF_TFSWITCH_VERSIONS}"
+    fi
+
+    if [[ ! -L "${HOME}/${TF_TFSWITCH_VERSIONS}" ]]
+    then
+      __duct_run ln -s "${DUCT_TERRAFORM_WRKDIR}/${TF_TFSWITCH_VERSIONS}" "${HOME}/${TF_TFSWITCH_VERSIONS}"
+    fi
+  fi
+
+  for TF_TFSWITCH_FILE in "${DUCT_TERRAFORM_WRKDIR}/"**.tf
+  do
+    if [[ -s "$TF_TFSWITCH_FILE"  ]]
+    then
+      mapfile -t -n 0 TF_TFSWITCH_DATA < "$TF_TFSWITCH_FILE"
+
+      for TF_TFSWITCH_ITEM in "${TF_TFSWITCH_DATA[@]}"
+      do
+        if [[ "$TF_TFSWITCH_ITEM" =~ ^([[:space:]]+required_version) ]]
+        then
+          __duct_msg d "using version from $TF_TFSWITCH_FILE"
+          TF_TFSWITCH_READ=1
+        fi
+      done
+    fi
+  done
+
+  if [[ "$TF_TFSWITCH_READ" -eq 0 ]]
+  then
+    if [[ -n "$DUCT_TERRAFORM_TFSWITCH_DEFAULT" ]]
+    then
+      __duct_msg d "using version default $DUCT_TERRAFORM_TFSWITCH_DEFAULT"
+      TF_TFSWITCH_OPTS+=( --default="$DUCT_TERRAFORM_TFSWITCH_DEFAULT" )
+    else
+      __duct_msg d "using version latest"
+      TF_TFSWITCH_OPTS+=( --latest )
+    fi
+  fi
+
+  __duct_terraform_run tfswitch "${DUCT_TERRAFORM_TFSWITCH_OPTIONS[@]}" "${TF_TFSWITCH_OPTS[@]}"
 }
 
 # @func duct terraform core version get
