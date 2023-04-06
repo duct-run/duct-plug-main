@@ -429,9 +429,9 @@ __duct_terraform_run_out2json() {
 
   TF_RUN_OUT2JSON_JSON=(
     "{"
-    "  create: ${TF_RUN_OUT2JSON_INFO["create"]},"
-    "  update: ${TF_RUN_OUT2JSON_INFO["update"]},"
-    "  delete: ${TF_RUN_OUT2JSON_INFO["delete"]}"
+    "  \"create\": ${TF_RUN_OUT2JSON_INFO["create"]},"
+    "  \"update\": ${TF_RUN_OUT2JSON_INFO["update"]},"
+    "  \"delete\": ${TF_RUN_OUT2JSON_INFO["delete"]}"
     "}"
   )
 
