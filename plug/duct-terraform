@@ -1442,7 +1442,7 @@ __duct_terraform_load() {
 
   local TF_LOAD_RC=0
 
-  __duct_bin_check "${_DUCT_TERRAFORM_LOAD_REQUIREMENTS[@]}"
+  __duct_bin_check "${_DUCT_TERRAFORM_LOAD_REQUIREMENTS[@]}" || TF_LOAD_RC=$?
 
   return $TF_LOAD_RC
 }
