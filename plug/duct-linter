@@ -76,8 +76,8 @@ __duct_linter_editorconfig() {
 # @func duct linter hadolint
 
 declare -r -a _DUCT_LINTER_HADOLINT_FILES=(
-  'Dockerfile'
-  'Containerfile'
+  '**/Containerfile'
+  '**/Dockerfile'
 )
 
 declare -r -a _DUCT_LINTER_HADOLINT_OPTIONS=(
