@@ -63,7 +63,8 @@ __duct_linter_editorconfig() {
 
   for EDITORCONFIG_ITEM in "${EDITORCONFIG_FILES[@]}"
   do
-    readarray -t -n 0 -O "${#EDITORCONFIG_LINT[@]}" EDITORCONFIG_LINT < <( compgen -G "$EDITORCONFIG_ITEM" )
+    # shellcheck disable=SC2206
+    EDITORCONFIG_LINT+=( $EDITORCONFIG_ITEM )
   done
 
   if [[ "${#EDITORCONFIG_LINT[@]}" -ge 1 ]]
@@ -110,7 +111,8 @@ __duct_linter_hadolint() {
 
   for HADOLINT_ITEM in "${HADOLINT_FILES[@]}"
   do
-    readarray -t -n 0 -O "${#HADOLINT_LINT[@]}" HADOLINT_LINT < <( compgen -G "$HADOLINT_ITEM" || : )
+    # shellcheck disable=SC2206
+    HADOLINT_LINT+=( $HADOLINT_ITEM )
   done
 
   if [[ "${#HADOLINT_LINT[@]}" -ge 1 ]]
@@ -150,7 +152,8 @@ __duct_linter_markdownlint() {
 
   for MARKDOWNLINT_ITEM in "${MARKDOWNLINT_FILES[@]}"
   do
-    readarray -t -n 0 -O "${#MARKDOWNLINT_LINT[@]}" MARKDOWNLINT_LINT < <( compgen -G "$MARKDOWNLINT_ITEM" )
+    # shellcheck disable=SC2206
+    MARKDOWNLINT_LINT+=( $MARKDOWNLINT_ITEM )
   done
 
   if [[ "${#MARKDOWNLINT_LINT[@]}" -ge 1 ]]
@@ -194,7 +197,8 @@ __duct_linter_pylint() {
 
   for PYLINT_ITEM in "${PYLINT_FILES[@]}"
   do
-    readarray -t -n 0 -O "${#PYLINT_LINT[@]}" PYLINT_LINT < <( compgen -G "$PYLINT_ITEM" )
+    # shellcheck disable=SC2206
+    PYLINT_LINT+=( $PYLINT_ITEM )
   done
 
   if [[ "${#PYLINT_LINT[@]}" -ge 1 ]]
@@ -242,7 +246,8 @@ __duct_linter_shellcheck() {
 
   for SHELLCHECK_ITEM in "${SHELLCHECK_FILES[@]}"
   do
-    readarray -t -n 0 -O "${#SHELLCHECK_LINT[@]}" SHELLCHECK_LINT < <( compgen -G "$SHELLCHECK_ITEM" )
+    # shellcheck disable=SC2206
+    SHELLCHECK_LINT+=( $SHELLCHECK_ITEM )
   done
 
   if [[ "${#SHELLCHECK_LINT[@]}" -ge 1 ]]
