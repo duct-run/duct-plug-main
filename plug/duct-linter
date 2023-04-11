@@ -22,7 +22,6 @@
 
 # @func duct linter editorconfig
 
-# @fvar List of editorconfig excludes (defaults).
 declare -r -a _DUCT_LINTER_EDITORCONFIG_EXCLUDE=(
   '\.cer$'
   '\.cert$'
@@ -32,140 +31,164 @@ declare -r -a _DUCT_LINTER_EDITORCONFIG_EXCLUDE=(
   '\.pfx$'
 )
 
-# @fvar List of editorconfig files to lint (defaults).
-declare -r -a _DUCT_LINTER_EDITORCONFIG_FILES=()
+declare -r -a _DUCT_LINTER_EDITORCONFIG_FILES=(
+  '**/*'
+)
 
-# @fvar List of editorconfig options (defaults).
 declare -r -a _DUCT_LINTER_EDITORCONFIG_OPTIONS=(
   -verbose
 )
 
-# @fvar List of editorconfig excludes.
 declare -g -a DUCT_LINTER_EDITORCONFIG_EXCLUDE=( "${DUCT_LINTER_EDITORCONFIG_EXCLUDE[@]:-${_DUCT_LINTER_EDITORCONFIG_EXCLUDE[@]}}" )
-
-# shellcheck disable=SC2206
-# @fvar List of editorconfig files to lint.
-declare -g -a DUCT_LINTER_EDITORCONFIG_FILES=( ${DUCT_LINTER_EDITORCONFIG_FILES[@]:-${_DUCT_LINTER_EDITORCONFIG_FILES[@]}} )
-
-# @fvar List of editorconfig options.
+declare -g -a DUCT_LINTER_EDITORCONFIG_FILES=( "${DUCT_LINTER_EDITORCONFIG_FILES[@]:-${_DUCT_LINTER_EDITORCONFIG_FILES[@]}}" )
 declare -g -a DUCT_LINTER_EDITORCONFIG_OPTIONS=( "${DUCT_LINTER_EDITORCONFIG_OPTIONS[@]:-${_DUCT_LINTER_EDITORCONFIG_OPTIONS[@]}}" )
-
-# @fvar Editorconfig binary to use.
 declare -g DUCT_LINTER_EDITORCONFIG_BINARY="${DUCT_LINTER_EDITORCONFIG_BINARY:-"ec"}"
-
-# @fvar Editorconfig config file.
-declare -g DUCT_LINTER_EDITORCONFIG_CONFIG="${DUCT_LINTER_EDITORCONFIG_CONFIG:-}"
 
 # @desc Run editorconfig (checker)
 # @intl false
 # @life main
 # @deps duct-run
-# @opts
+# @opts [files@]
 __duct_linter_editorconfig() {
   local -a EDITORCONFIG_FILES=( "${@:-${DUCT_LINTER_EDITORCONFIG_FILES[@]}}" )
-  local -a EDITORCONFIG_OPTIONS=( "${DUCT_LINTER_EDITORCONFIG_OPTIONS[@]}" )
-  local EDITORCONFIG_EXCLUDE
 
-  __duct_bin_check "$DUCT_LINTER_EDITORCONFIG_BINARY"
+  local -a EDITORCONFIG_LINT
+  local -a EDITORCONFIG_OPTS=( "${DUCT_LINTER_EDITORCONFIG_OPTIONS[@]}" )
+  local EDITORCONFIG_EXCL
 
-  if [[ -n "${DUCT_LINTER_EDITORCONFIG_CONFIG}" ]]
+  # build exclude
+  EDITORCONFIG_EXCL="$( IFS="|"; printf "%s" "${DUCT_LINTER_EDITORCONFIG_EXCLUDE[*]}" )"
+  EDITORCONFIG_OPTS+=( -exclude "$EDITORCONFIG_EXCL" )
+
+  readarray -t -n 0 EDITORCONFIG_LINT < <( compgen -G "${EDITORCONFIG_FILES[@]}" )
+
+  if [[ "${#EDITORCONFIG_LINT[@]}" -ge 1 ]]
   then
-    EDITORCONFIG_OPTIONS+=( "-config $DUCT_LINTER_EDITORCONFIG_CONFIG" )
+    __duct_msg n "editorconfig ${EDITORCONFIG_OPTS[*]} ${EDITORCONFIG_FILES[*]}"
+
+    # shellcheck disable=SC2086
+    __duct_run "$DUCT_LINTER_EDITORCONFIG_BINARY" "${EDITORCONFIG_OPTS[@]}" \"${EDITORCONFIG_FILES[*]}\"
+  else
+    __duct_msg w "editorconfig no files! (${EDITORCONFIG_FILES[*]})"
   fi
-
-  # build exclude options
-  EDITORCONFIG_EXCLUDE="$( IFS="|"; printf "%s" "${DUCT_LINTER_EDITORCONFIG_EXCLUDE[*]}" )"
-  EDITORCONFIG_OPTIONS+=( -exclude "${EDITORCONFIG_EXCLUDE}" )
-
-  __duct_run "$DUCT_LINTER_EDITORCONFIG_BINARY" "${EDITORCONFIG_OPTIONS[@]}" "${EDITORCONFIG_FILES[@]}"
 }
-readonly -f __duct_linter_editorconfig
 
 # @func duct linter hadolint
 
+declare -r -a _DUCT_LINTER_HADOLINT_FILES=(
+  'Dockerfile'
+  'Containerfile'
+)
+
+declare -r -a _DUCT_LINTER_HADOLINT_OPTIONS=(
+  --strict-labels
+)
+
+declare -g -a DUCT_LINTER_HADOLINT_FILES=( "${DUCT_HADOLINT_FILES[@]:-${_DUCT_LINTER_HADOLINT_FILES[@]}}" )
+declare -g -a DUCT_LINTER_HADOLINT_OPTIONS=( "${DUCT_HADOLINT_OPTIONS[@]:-${_DUCT_LINTER_HADOLINT_OPTIONS[@]}}" )
 declare -g DUCT_LINTER_HADOLINT_BINARY="${DUCT_HADOLINT_BINARY:-"hadolint"}"
-declare -g DUCT_LINTER_HADOLINT_CONFIG="${DUCT_HADOLINT_CONFIG:-}"
-declare -g DUCT_LINTER_HADOLINT_FORMAT="${DUCT_HADOLINT_FORMAT:-"gnu"}"
+declare -g DUCT_LINTER_HADOLINT_FORMAT="${DUCT_HADOLINT_FORMAT:-"tty"}"
 
-declare -g -a DUCT_LINTER_HADOLINT_FILES=( "${DUCT_HADOLINT_FILES[@]:-}" )
-declare -g -a DUCT_LINTER_HADOLINT_OPTIONS=( "${DUCT_HADOLINT_OPTIONS[@]:-}" )
-
-# @desc
-# @intl
-# @life
+# @desc Run Dockerfile linter `hadolint`.
+# @intl false
+# @life main
 # @deps
-# @opts
+# @opts [files@]
 __duct_linter_hadolint() {
   local -a HADOLINT_FILES=( "${@:-${DUCT_LINTER_HADOLINT_FILES[@]}}" )
 
-  __duct_bin_check "$DUCT_HADOLINT_BINARY"
+  local -a HADOLINT_LINT
+  local -a HADOLINT_OPTS=( "${DUCT_LINTER_HADOLINT_OPTIONS[@]}" )
+
+  # set format
+  HADOLINT_OPTS+=( --format="$DUCT_LINTER_HADOLINT_FORMAT" )
+
+  readarray -t -n 0 HADOLINT_LINT < <( compgen -G "${HADOLINT_FILES[@]}" )
+
+  if [[ "${#HADOLINT_LINT[@]}" -ge 1 ]]
+  then
+    __duct_msg n "hadolint ${HADOLINT_OPTS[*]} ${HADOLINT_LINT[*]}"
+    __duct_run "$DUCT_LINTER_HADOLINT_BINARY" "${HADOLINT_OPTS[@]}" "${HADOLINT_LINT[@]}"
+  else
+    __duct_msg w "hadolint no files! (${HADOLINT_FILES[*]})"
+  fi
 }
 
 # @func duct linter markdownlint
 
-declare -a -r _DUCT_LINTER_MARKDOWNLINT_DISABLE=()
-declare -a -r _DUCT_LINTER_MARKDOWNLINT_ENABLE=()
-declare -a -r _DUCT_LINTER_MARKDOWNLINT_FILES=( '**/*.md' )
-declare -a -r _DUCT_LINTER_MARKDOWNLINT_IGNORE=()
-declare -a -r _DUCT_LINTER_MARKDOWNLINT_OPTIONS=( '--dot' )
+declare -a -r _DUCT_LINTER_MARKDOWNLINT_FILES=(
+  '**/*.md'
+)
 
-declare -g -a DUCT_LINTER_MARKDOWNLINT_DISABLE=( ${DUCT_LINTER_MARKDOWNLINT_DISABLE[@]:-${_DUCT_LINTER_MARKDOWNLINT_DISABLE[@]}} )
-declare -g -a DUCT_LINTER_MARKDOWNLINT_ENABLE=( ${DUCT_LINTER_MARKDOWNLINT_ENABLE[@]:-${_DUCT_LINTER_MARKDOWNLINT_ENABLE[@]}} )
+declare -a -r _DUCT_LINTER_MARKDOWNLINT_OPTIONS=(
+  --dot
+)
+
 declare -g -a DUCT_LINTER_MARKDOWNLINT_FILES=( "${DUCT_LINTER_MARKDOWNLINT_FILES[@]:-${_DUCT_LINTER_MARKDOWNLINT_FILES[@]}}" )
-declare -g -a DUCT_LINTER_MARKDOWNLINT_IGNORE=( ${DUCT_LINTER_MARKDOWNLINT_IGNORE[@]:-${_DUCT_LINTER_MARKDOWNLINT_IGNORE[@]}} )
 declare -g -a DUCT_LINTER_MARKDOWNLINT_OPTIONS=( "${DUCT_LINTER_MARKDOWNLINT_OPTIONS[@]:-${_DUCT_LINTER_MARKDOWNLINT_OPTIONS[@]}}" )
-
 declare -g DUCT_LINTER_MARKDOWNLINT_BINARY="${DUCT_LINTER_MARKDOWNLINT_BINARY:-"markdownlint"}"
-declare -g DUCT_LINTER_MARKDOWNLINT_CONFIG="${DUCT_LINTER_MARKDOWNLINT_CONFIG:-}"
-declare -g DUCT_LINTER_MARKDOWNLINT_JSON="${DUCT_LINTER_MARKDOWNLINT_JSON:-false}"
 
 # @desc Run markdown lint `markdownlint`.
 # @intl false
 # @life main
 # @deps
-# @opts [files]
+# @opts [files@]
 __duct_linter_markdownlint() {
   local -a MARKDOWNLINT_FILES=( "${@:-${DUCT_LINTER_MARKDOWNLINT_FILES[@]}}" )
-  local -a MARKDOWNLINT_OPTIONS=( "${DUCT_LINTER_MARKDOWNLINT_OPTIONS[@]}" )
-  local MARKDOWNLINT_IGNORE
 
-  if [[ "${#DUCT_LINTER_MARKDOWNLINT_DISABLE[@]}" -gt 0 ]]
+  local -a MARKDOWNLINT_LINT
+  local -a MARKDOWNLINT_OPTS=( "${DUCT_LINTER_MARKDOWNLINT_OPTIONS[@]}" )
+
+  readarray -t -n 0 MARKDOWNLINT_LINT < <( compgen -G "${MARKDOWNLINT_FILES[@]}" )
+
+  if [[ "${#MARKDOWNLINT_LINT[@]}" -ge 1 ]]
   then
-    MARKDOWNLINT_OPTIONS+=( --disable "${DUCT_LINTER_MARKDOWNLINT_DISABLE[*]}" -- )
+    __duct_msg n "markdownlint ${MARKDOWNLINT_OPTS[*]} ${MARKDOWNLINT_FILES[*]}"
+    __duct_run "$DUCT_LINTER_MARKDOWNLINT_BINARY" "${MARKDOWNLINT_OPTS[@]}" "${MARKDOWNLINT_LINT[@]}"
+  else
+    __duct_msg w "no markdownlint files! (${MARKDOWNLINT_FILES[*]})"
   fi
-
-  if [[ "${#DUCT_LINTER_MARKDOWNLINT_ENABLE[@]}" -gt 0 ]]
-  then
-    MARKDOWNLINT_OPTIONS+=( --enable "${DUCT_LINTER_MARKDOWNLINT_ENABLE[*]}" -- )
-  fi
-
-  if [[ "${#DUCT_LINTER_MARKDOWNLINT_IGNORE[@]}" -gt 0 ]]
-  then
-    for MARKDOWNLINT_IGNORE in "${DUCT_LINTER_MARKDOWNLINT_IGNORE[@]}"
-    do
-      MARKDOWNLINT_OPTIONS+=( --ignore "$MARKDOWNLINT_IGNORE" )
-    done
-  fi
-
-  if [[ "${DUCT_LINTER_MARKDOWNLINT_JSON}" == true ]]
-  then
-    MARKDOWNLINT_OPTIONS+=( --json )
-  fi
-
-  __duct_bin_check "$DUCT_LINTER_MARKDOWNLINT_BINARY"
-  __duct_run "$DUCT_LINTER_MARKDOWNLINT_BINARY" "${MARKDOWNLINT_OPTIONS[@]}" "${MARKDOWNLINT_FILES[@]}"
 }
 
 # @func duct linter pylint
 
-declare -r -a _DUCT_LINTER_PYLINT_OPTIONS=()
+declare -r -a _DUCT_LINTER_PYLINT_FILES=(
+  '**/*.py'
+)
 
-declare -g -a DUCT_LINTER_PYLINT_OPTIONS=( ${DUCT_LINTER_PYLINT_OPTIONS[@]:-${_DUCT_LINTER_PYLINT_OPTIONS[@]}} )
+declare -r -a _DUCT_LINTER_PYLINT_OPTIONS=(
+  --enable-all-extensions
+)
 
+declare -g -a DUCT_LINTER_PYLINT_FILES=( "${DUCT_LINTER_PYLINT_FILES[@]:-${_DUCT_LINTER_PYLINT_FILES[@]}}" )
+declare -g -a DUCT_LINTER_PYLINT_OPTIONS=( "${DUCT_LINTER_PYLINT_OPTIONS[@]:-${_DUCT_LINTER_PYLINT_OPTIONS[@]}}" )
 declare -g DUCT_LINTER_PYLINT_BINARY="${DUCT_LINTER_PYLINT_BINARY:-"pylint"}"
+declare -g DUCT_LINTER_PYLINT_FORMAT="${DUCT_LINTER_PYLINT_FORMAT:-"colorized"}"
 
-__duct_linter_pylint() { :; }
+# @desc Run python linter `pylint`.
+# @intl false
+# @life main
+# @deps duct-msg duct-run
+# @opts [files@]
+__duct_linter_pylint() {
+  local -a PYLINT_FILES=( "${@:-${DUCT_LINTER_PYLINT_FILES[@]}}" )
 
+  local -a PYLINT_LINT
+  local -a PYLINT_OPTS=( "${DUCT_LINTER_PYLINT_OPTIONS[@]}" )
+
+  # set format
+  PYLINT_OPTS+=( --output-format "$DUCT_LINTER_PYLINT_FORMAT" )
+
+  readarray -t -n 0 PYLINT_LINT < <( compgen -G "${PYLINT_FILES[@]}" )
+
+  if [[ "${#PYLINT_LINT[@]}" -ge 1 ]]
+  then
+    __duct_msg n "pylint ${PYLINT_OPTS[*]} ${PYLINT_FILES[*]}"
+    __duct_run "$DUCT_LINTER_PYLINT_BINARY" "${PYLINT_OPTS[@]}" "${PYLINT_LINT[@]}"
+  else
+    __duct_msg w "pylint no files! (${PYLINT_FILES[*]})"
+  fi
+}
 
 # @func duct linter shellcheck
 
@@ -181,11 +204,10 @@ declare -a -r _DUCT_LINTER_SHELLCHECK_OPTIONS=(
   --external-sources
 )
 
-declare -g DUCT_LINTER_SHELLCHECK_BINARY="${DUCT_LINTER_SHELLCHECK_BINARY:-"shellcheck"}"
-declare -g DUCT_LINTER_SHELLCHECK_FORMAT="${DUCT_LINTER_SHELLCHECK_FORMAT:-"gcc"}"
-
 declare -g -a DUCT_LINTER_SHELLCHECK_FILES=( "${DUCT_LINTER_SHELLCHECK_FILES[@]:-${_DUCT_LINTER_SHELLCHECK_FILES[@]}}" )
 declare -g -a DUCT_LINTER_SHELLCHECK_OPTIONS=( "${DUCT_LINTER_SHELLCHECK_OPTIONS[@]:-${_DUCT_LINTER_SHELLCHECK_OPTIONS[@]}}" )
+declare -g DUCT_LINTER_SHELLCHECK_BINARY="${DUCT_LINTER_SHELLCHECK_BINARY:-"shellcheck"}"
+declare -g DUCT_LINTER_SHELLCHECK_FORMAT="${DUCT_LINTER_SHELLCHECK_FORMAT:-"gcc"}"
 
 # @desc Run shell linter `shellcheck`.
 # @intl false
@@ -195,48 +217,66 @@ declare -g -a DUCT_LINTER_SHELLCHECK_OPTIONS=( "${DUCT_LINTER_SHELLCHECK_OPTIONS
 __duct_linter_shellcheck() {
   local -a SHELLCHECK_FILES=( "${@:-${DUCT_LINTER_SHELLCHECK_FILES[@]}}" )
 
-  local -a SHELLCHECK_OPTIONS=( "${DUCT_LINTER_SHELLCHECK_OPTIONS[@]}" )
-  local -i SHELLCHECK_RC=0
-  local SHELLCHECK_FILE
-
-  __duct_bin_check "$DUCT_LINTER_SHELLCHECK_BINARY"
+  local -a SHELLCHECK_LINT
+  local -a SHELLCHECK_OPTS=( "${DUCT_LINTER_SHELLCHECK_OPTIONS[@]}" )
 
   # set format
-  SHELLCHECK_OPTIONS+=( --format="${DUCT_LINTER_SHELLCHECK_FORMAT}" )
+  SHELLCHECK_OPTS+=( --format="${DUCT_LINTER_SHELLCHECK_FORMAT}" )
 
-  # shellcheck disable=SC2068
-  for SHELLCHECK_FILE in ${SHELLCHECK_FILES[@]}
-  do
-    __duct_msg n "check $SHELLCHECK_FILE"
-    __duct_run "$DUCT_LINTER_SHELLCHECK_BINARY" "${SHELLCHECK_OPTIONS[@]}" "$SHELLCHECK_FILE" || (( SHELLCHECK_RC+=$? ))
-  done
+  readarray -t -n 0 SHELLCHECK_LINT < <( compgen -G "${SHELLCHECK_FILES[@]}" )
 
-  if [[ "$SHELLCHECK_RC" -ge 1 ]]
+  if [[ "${#SHELLCHECK_LINT[@]}" -ge 1 ]]
   then
-    return 1
+    __duct_msg n "shellcheck ${SHELLCHECK_OPTS[*]} ${SHELLCHECK_FILES[*]}"
+    __duct_run "$DUCT_LINTER_SHELLCHECK_BINARY" "${SHELLCHECK_OPTS[@]}" "${SHELLCHECK_LINT[@]}"
+  else
+    __duct_msg w "no shellcheck files! (${SHELLCHECK_FILES[*]})"
   fi
 }
 
 # @func duct yamllint
+
 declare -a -r _DUCT_LINTER_YAMLLINT_OPTIONS=(
   '--strict'
 )
+declare -r -a _DUCT_LINTER_YAMLLINT_FILES=(
+  '**/*.yml'
+  '**/*.yaml'
+)
 
+declare -g -a DUCT_LINTER_YAMLLINT_FILES=( "${DUCT_LINTER_YAMLLINT_FILES[@]:-${_DUCT_LINTER_YAMLLINT_FILES[@]}}" )
+declare -g -a DUCT_LINTER_YAMLLINT_OPTIONS=( "${DUCT_LINTER_YAMLLINT_OPTIONS[@]:-${_DUCT_LINTER_YAMLLINT_OPTIONS[@]}}" )
 declare -g DUCT_LINTER_YAMLLINT_BINARY="${DUCT_LINTER_YAMLLINT_BINARY:-"yamllint"}"
-declare -g DUCT_LINTER_YAMLLINT_CONFIG="${DUCT_LINTER_YAMLLINT_CONFIG:-}"
-declare -g DUCT_LINTER_YAMLLINT_FORMAT="${DUCT_LINTER_YAMLLINT_FORMAT:-"parsable"}"
-
-declare -g -a DUCT_LINTER_YAMLLINT_FILES=( "${DUCT_LINTER_YAMLLINT_FILES[@]:-}" )
-declare -g -a DUCT_LINTER_YAMLLINT_OPTIONS=( "${DUCT_LINTER_YAMLLINT_OPTIONS[@]:-}" )
+declare -g DUCT_LINTER_YAMLLINT_FORMAT="${DUCT_LINTER_YAMLLINT_FORMAT:-"colored"}"
 
 # @desc Run yaml linter `yamllint`.
 # @intl false
 # @life main
 # @deps duct-run
-# @opts
-__duct_linter_yamllint() { :; }
+# @opts [files@]
+__duct_linter_yamllint() {
+  local -a YAMLLINT_FILES=( "${@:-${DUCT_LINTER_YAMLLINT_FILES[@]}}" )
+
+  local -a YAMLLINT_LINT
+  local -a YAMLLINT_OPTS=( "${DUCT_LINTER_YAMLLINT_OPTION[@]}" )
+
+  # set format
+  YAMLLINT_OPTS+=( --format="$DUCT_LINTER_YAMLLINT_FORMAT" )
+
+  readarray -t -n 0 YAMLLINT_LINT < <( compgen -G "${YAMLLINT_FILES[@]}" )
+
+  if [[ "${#YAMLLINT_LINT[@]}" -ge 1 ]]
+  then
+    __duct_msg n "yamllint ${YAMLLINT_OPTS[*]} ${YAMLLINT_FILES[*]}"
+    __duct_run "$DUCT_LINTER_YAMLLINT_BINARY" "${YAMLLINT_OPTS[@]}" "${YAMLLINT_LINT[@]}"
+  else
+    __duct_msg w "yamllint no files! (${YAMLLINT_FILES[*]})"
+  fi
+}
 
 # @func duct tflint
+
+declare -g DUCT_LINTER_TFLINT_BINARY="${DUCT_LINTER_TFLINT_BINARY:-"tflint"}"
 
 # @desc Alias of `duct terraform tflint`.
 # @intl false
@@ -257,6 +297,7 @@ declare -r -a _DUCT_LINTER_LOAD_REQUIREMENTS=(
   "${DUCT_LINTER_MARKDOWNLINT_BINARY}"
   "${DUCT_LINTER_PYLINT_BINARY}"
   "${DUCT_LINTER_SHELLCHECK_BINARY}"
+  "${DUCT_LINTER_TFLINT_BINARY}"
   "${DUCT_LINTER_YAMLLINT_BINARY}"
 )
 
