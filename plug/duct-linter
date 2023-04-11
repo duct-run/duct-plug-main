@@ -110,7 +110,7 @@ __duct_linter_hadolint() {
 
   for HADOLINT_ITEM in "${HADOLINT_FILES[@]}"
   do
-    readarray -t -n 0 -O "${#HADOLINT_LINT[@]}" HADOLINT_LINT < <( compgen -G "$HADOLINT_ITEM" )
+    readarray -t -n 0 -O "${#HADOLINT_LINT[@]}" HADOLINT_LINT < <( compgen -G "$HADOLINT_ITEM" || : )
   done
 
   if [[ "${#HADOLINT_LINT[@]}" -ge 1 ]]
