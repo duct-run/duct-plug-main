@@ -185,13 +185,17 @@ declare -g DUCT_LINTER_PYLINT_FORMAT="${DUCT_LINTER_PYLINT_FORMAT:-"colorized"}"
 __duct_linter_pylint() {
   local -a PYLINT_FILES=( "${@:-${DUCT_LINTER_PYLINT_FILES[@]}}" )
 
-  local -a PYLINT_LINT
+  local -a PYLINT_LINT=()
   local -a PYLINT_OPTS=( "${DUCT_LINTER_PYLINT_OPTIONS[@]}" )
+  local PYLINT_ITEM
 
   # set format
   PYLINT_OPTS+=( --output-format "$DUCT_LINTER_PYLINT_FORMAT" )
 
-  readarray -t -n 0 PYLINT_LINT < <( compgen -G "${PYLINT_FILES[@]}" )
+  for PYLINT_ITEM in "${PYLINT_FILES[@]}"
+  do
+    readarray -t -n 0 -O "${#PYLINT_LINT[@]}" PYLINT_LINT < <( compgen -G "$PYLINT_ITEM" )
+  done
 
   if [[ "${#PYLINT_LINT[@]}" -ge 1 ]]
   then
