@@ -52,15 +52,19 @@ declare -g DUCT_LINTER_EDITORCONFIG_BINARY="${DUCT_LINTER_EDITORCONFIG_BINARY:-"
 __duct_linter_editorconfig() {
   local -a EDITORCONFIG_FILES=( "${@:-${DUCT_LINTER_EDITORCONFIG_FILES[@]}}" )
 
-  local -a EDITORCONFIG_LINT
+  local -a EDITORCONFIG_LINT=()
   local -a EDITORCONFIG_OPTS=( "${DUCT_LINTER_EDITORCONFIG_OPTIONS[@]}" )
   local EDITORCONFIG_EXCL
+  local EDITORCONFIG_ITEM
 
   # build exclude
   EDITORCONFIG_EXCL="$( IFS="|"; printf "%s" "${DUCT_LINTER_EDITORCONFIG_EXCLUDE[*]}" )"
   EDITORCONFIG_OPTS+=( -exclude "$EDITORCONFIG_EXCL" )
 
-  readarray -t -n 0 EDITORCONFIG_LINT < <( compgen -G "${EDITORCONFIG_FILES[@]}" )
+  for EDITORCONFIG_ITEM in "${EDITORCONFIG_FILES[@]}"
+  do
+    readarray -t -n 0 -O "${#EDITORCONFIG_LINT[@]}" EDITORCONFIG_LINT < <( compgen -G "$EDITORCONFIG_ITEM" )
+  done
 
   if [[ "${#EDITORCONFIG_LINT[@]}" -ge 1 ]]
   then
@@ -97,13 +101,17 @@ declare -g DUCT_LINTER_HADOLINT_FORMAT="${DUCT_HADOLINT_FORMAT:-"tty"}"
 __duct_linter_hadolint() {
   local -a HADOLINT_FILES=( "${@:-${DUCT_LINTER_HADOLINT_FILES[@]}}" )
 
-  local -a HADOLINT_LINT
+  local -a HADOLINT_LINT=()
   local -a HADOLINT_OPTS=( "${DUCT_LINTER_HADOLINT_OPTIONS[@]}" )
+  local HADOLINT_ITEM
 
   # set format
   HADOLINT_OPTS+=( --format="$DUCT_LINTER_HADOLINT_FORMAT" )
 
-  readarray -t -n 0 HADOLINT_LINT < <( compgen -G "${HADOLINT_FILES[@]}" )
+  for HADOLINT_ITEM in "${HADOLINT_FILES[@]}"
+  do
+    readarray -t -n 0 -O "${#HADOLINT_LINT[@]}" HADOLINT_LINT < <( compgen -G "$HADOLINT_ITEM" )
+  done
 
   if [[ "${#HADOLINT_LINT[@]}" -ge 1 ]]
   then
