@@ -304,8 +304,8 @@ __duct_terraform_run() {
 
     if [[ "$DUCT_TERRAFORM_RUN_OUTPUT" == true ]]
     then
-       DUCT_RUN_OUTPUT="$DUCT_TERRAFORM_RUN_OUTPUT_FILE" \
-         __duct_run output "$DUCT_TERRAFORM_RUN_TERRAFORM_BINARY" "${TF_RUN_CHDIR[@]}" "${TF_RUN_RCMD[@]}" "${TF_RUN_OPTS[@]}"
+      DUCT_RUN_OUTPUT="$DUCT_TERRAFORM_RUN_OUTPUT_FILE" \
+        __duct_run output "$DUCT_TERRAFORM_RUN_TERRAFORM_BINARY" "${TF_RUN_CHDIR[@]}" "${TF_RUN_RCMD[@]}" "${TF_RUN_OPTS[@]}"
 
       __duct_terraform_run_out2json "$TF_RUN_PCMD"
 
