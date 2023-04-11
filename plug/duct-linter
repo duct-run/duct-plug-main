@@ -286,7 +286,8 @@ __duct_linter_yamllint() {
 
   for YAMLLINT_ITEM in "${YAMLLINT_FILES[@]}"
   do
-    readarray -t -n 0 -O "${#YAMLLINT_LINT[@]}" YAMLLINT_LINT < <( compgen -G "$YAMLLINT_ITEM" )
+    # shellcheck disable=SC2206
+    YAMLLINT_LINT+=( $YAMLLINT_ITEM )
   done
 
   if [[ "${#YAMLLINT_LINT[@]}" -ge 1 ]]
