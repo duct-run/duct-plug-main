@@ -1395,6 +1395,49 @@ __duct_terraform_compare_version() {
   __duct_compare_version "$TF_VERSION1" "$TF_VERSION2"
 }
 
+# @func duct terraform module naming
+
+declare -g -A DUCT_TERRAFORM_MODULE_NAMING_INFO=()
+declare -g DUCT_TERRAFORM_MODULE_NAMING_REGEX="${DUCT_TERRAFORM_MODULE_NAMING_REGEX:-"^(terraform-([a-z]+)-([a-z0-9-_]+))"}"
+declare -g DUCT_TERRAFORM_MODULE_NAMING_REMATCH_NAME="${DUCT_TERRAFORM_MODULE_NAMING_REMATCH_NAME:-3}"
+declare -g DUCT_TERRAFORM_MODULE_NAMING_REMATCH_PROVIDER="${DUCT_TERRAFORM_MODULE_NAMING_REMATCH_PROVIDER:-2}"
+
+# @desc Check terraform module naming (set DUCT_TERRAFORM_MODULE_NAMING_INFO).
+# @intl false
+# @life main
+# @deps duct-msg
+# @opts <module-name>
+__duct_terraform_module_naming() {
+  local TF_MODULE_CHECK="${1:-}"
+
+  local TF_MODULE_NAME
+  local TF_MODULE_PROVIDER
+
+  if [[ -z "$TF_MODULE_CHECK" ]]
+  then
+    __duct_msg e "no module name provided!"
+    return 1
+  fi
+
+  if [[ "$TF_MODULE_CHECK" =~ $DUCT_TERRAFORM_MODULE_NAMING_REGEX ]]
+  then
+    TF_MODULE_NAME="${BASH_REMATCH[${DUCT_TERRAFORM_MODULE_NAMING_REMATCH_NAME}]}"
+    TF_MODULE_PROVIDER="${BASH_REMATCH[${DUCT_TERRAFORM_MODULE_NAMING_REMATCH_PROVIDER}]}"
+
+    __duct_msg n "$TF_MODULE_NAME ($TF_MODULE_PROVIDER)"
+    __duct_msg d "set DUCT_TERRAFORM_MODULE_NAMING_INFO['name']='$TF_MODULE_NAME'"
+    # shellcheck disable=SC2034
+    DUCT_TERRAFORM_MODULE_NAMING_INFO["name"]="$TF_MODULE_NAME"
+
+    __duct_msg d "set DUCT_TERRAFORM_MODULE_NAMING_INFO['provider']='$TF_MODULE_PROVIDER'"
+    # shellcheck disable=SC2034
+    DUCT_TERRAFORM_MODULE_NAMING_INFO["provider"]="$TF_MODULE_PROVIDER"
+  else
+    __duct_msg e "$TF_MODULE_CHECK do not match terraform module naming!"
+    return 1
+  fi
+}
+
 # @func duct terraform provider latest
 
 # @desc
