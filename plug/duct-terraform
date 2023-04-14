@@ -178,7 +178,6 @@ declare -g _DUCT_TERRAFORM_RUN_TFSWITCH_VERSION_DONE="${_DUCT_TERRAFORM_RUN_TFSW
 
 declare -g DUCT_TERRAFORM_RUN_CHDIR="${DUCT_TERRAFORM_RUN_CHDIR:-"tests/duct"}"
 declare -g DUCT_TERRAFORM_RUN_OUTPUT="${DUCT_TERRAFORM_RUN_OUTPUT:-true}"
-declare -g DUCT_TERRAFORM_RUN_OUTPUT_FILE="${DUCT_TERRAFORM_RUN_OUTPUT_FILE:-"terraform.out"}"
 declare -g DUCT_TERRAFORM_RUN_TERRAFORM_BINARY="${DUCT_TERRAFORM_RUN_TERRAFORM_BINARY:-"terraform"}"
 declare -g DUCT_TERRAFORM_RUN_TERRAFORM_VERSION="${DUCT_TERRAFORM_RUN_TERRAFORM_VERSION:-false}"
 declare -g DUCT_TERRAFORM_RUN_TERRAFORM_DOCS_BINARY="${DUCT_TERRAFORM_RUN_TERRAFORM_DOCS_BINARY:-"terraform-docs"}"
@@ -207,6 +206,7 @@ __duct_terraform_run() {
   local -a TF_RUN_TEMP=()
   local TF_RUN_HOPT
   local TF_RUN_ITEM
+  local TF_RUN_OUT
   local TF_RUN_PCMD
 
   if [[ "$TF_RUN_CMD" == "terraform-docs" ]]
@@ -285,6 +285,9 @@ __duct_terraform_run() {
     # real command
     TF_RUN_RCMD=( "$TF_RUN_CMD" )
 
+    # output file
+    TF_RUN_OUT="terraform-${TF_RUN_PCMD}.out"
+
     # handle destroy
     if [[ ${TF_RUN_OPTS[*]} =~ (-destroy) ]]
     then
@@ -317,11 +320,10 @@ __duct_terraform_run() {
 
     if [[ "$DUCT_TERRAFORM_RUN_OUTPUT" == true ]]
     then
-      DUCT_RUN_OUTPUT="$DUCT_TERRAFORM_RUN_OUTPUT_FILE" \
+      DUCT_RUN_OUTPUT="$TF_RUN_OUT" \
         __duct_run output "$DUCT_TERRAFORM_RUN_TERRAFORM_BINARY" "${TF_RUN_CHDIR[@]}" "${TF_RUN_RCMD[@]}" "${TF_RUN_OPTS[@]}"
 
-      __duct_terraform_run_out2json "$TF_RUN_PCMD"
-
+      __duct_terraform_run_out2json "$TF_RUN_PCMD" "$TF_RUN_OUT"
     else
       __duct_run "$DUCT_TERRAFORM_RUN_TERRAFORM_BINARY" "${TF_RUN_CHDIR[@]}" "${TF_RUN_RCMD[@]}" "${TF_RUN_OPTS[@]}"
     fi
@@ -332,7 +334,7 @@ __duct_terraform_run() {
 
 # @func duct terraform run out2json
 
-declare -g DUCT_TERRAFORM_RUN_OUT2JSON_REMOVE_OUTPUT="${DUCT_TERRAFORM_RUN_OUT2JSON_REMOVE_OUTPUT:-true}"
+declare -g DUCT_TERRAFORM_RUN_OUT2JSON_REMOVE_OUTPUT="${DUCT_TERRAFORM_RUN_OUT2JSON_REMOVE_OUTPUT:-false}"
 
 # @desc Parse Terraform run output file to JSON (GitLab report compatible).
 # @intl true
@@ -341,6 +343,7 @@ declare -g DUCT_TERRAFORM_RUN_OUT2JSON_REMOVE_OUTPUT="${DUCT_TERRAFORM_RUN_OUT2J
 # @opts <terraform-command>
 __duct_terraform_run_out2json() {
   local TF_RUN_OUT2JSON_CMD="${1:-}"
+  local TF_RUN_OUT2JSON_OUT="${2:-}"
 
   local -A TF_RUN_OUT2JSON_INFO
   local -a TF_RUN_OUT2JSON_DATA
@@ -416,7 +419,7 @@ __duct_terraform_run_out2json() {
     ;;
   esac
 
-  mapfile -t -n 0 TF_RUN_OUT2JSON_DATA < "$DUCT_TERRAFORM_RUN_OUTPUT_FILE"
+  mapfile -t -n 0 TF_RUN_OUT2JSON_DATA < "$TF_RUN_OUT2JSON_OUT"
 
   for TF_RUN_OUT2JSON_LINE in "${TF_RUN_OUT2JSON_DATA[@]}"
   do
@@ -453,9 +456,9 @@ __duct_terraform_run_out2json() {
 
   __duct_msg d "${TF_RUN_OUT2JSON_JSON[@]}"
 
-  if [[ "$DUCT_TERRAFORM_RUN_OUT2JSON_REMOVE_OUTPUT" == true && -f "$DUCT_TERRAFORM_RUN_OUTPUT_FILE" ]]
+  if [[ "$DUCT_TERRAFORM_RUN_OUT2JSON_REMOVE_OUTPUT" == true && -f "$TF_RUN_OUT2JSON_OUT" ]]
   then
-    __duct_run rm "$DUCT_TERRAFORM_RUN_OUTPUT_FILE"
+    __duct_run rm "$TF_RUN_OUT2JSON_OUT"
   fi
 }
 
