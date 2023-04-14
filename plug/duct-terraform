@@ -285,14 +285,14 @@ __duct_terraform_run() {
     # real command
     TF_RUN_RCMD=( "$TF_RUN_CMD" )
 
-    # output file
-    TF_RUN_OUT="terraform-${TF_RUN_PCMD}.out"
-
     # handle destroy
     if [[ ${TF_RUN_OPTS[*]} =~ (-destroy) ]]
     then
       TF_RUN_PCMD+="-destroy"
     fi
+
+    # output file
+    TF_RUN_OUT="terraform-${TF_RUN_PCMD}.out"
 
     # handle replace & target
     if [[ "${TF_RUN_OPTS[*]}" =~ (-replace|-target) ]]
