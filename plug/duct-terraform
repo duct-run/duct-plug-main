@@ -975,6 +975,8 @@ __duct_terraform_state_rm() {
 declare -r -a _DUCT_TERRAFORM_DOCS_OPTIONS=()
 # shellcheck disable=SC2206
 declare -g -a DUCT_TERRAFORM_DOCS_OPTIONS=( ${DUCT_TERRAFORM_DOCS_OPTIONS[@]:-${_DUCT_TERRAFORM_DOCS_OPTIONS[@]}} )
+declare -g DUCT_TERRAFORM_DOCS_CONFIG="${DUCT_TERRAFORM_DOCS_CONFIG:-".terraform-docs.yml"}"
+declare -g DUCT_TERRAFORM_DOCS_PATH="${DUCT_TERRAFORM_DOCS_PATH:-$PWD}"
 
 # @desc
 # @intl
@@ -984,7 +986,13 @@ declare -g -a DUCT_TERRAFORM_DOCS_OPTIONS=( ${DUCT_TERRAFORM_DOCS_OPTIONS[@]:-${
 __duct_terraform_docs() {
   local TF_DOCS_OPTS=( "$@" )
 
-  __duct_terraform_run terraform-docs "${DUCT_TERRAFORM_DOCS_OPTIONS[@]}" "${TF_DOCS_OPTS[@]}"
+  if [[ ! -r "$DUCT_TERRAFORM_DOCS_CONFIG"  ]]
+  then
+    __duct_msg e "'$DUCT_TERRAFORM_DOCS_CONFIG' not found!"
+    return 1
+  fi
+
+  __duct_terraform_run terraform-docs "${DUCT_TERRAFORM_DOCS_OPTIONS[@]}" "${TF_DOCS_OPTS[@]}" "$DUCT_TERRAFORM_DOCS_PATH"
 }
 
 # @func duct terraform tflint
