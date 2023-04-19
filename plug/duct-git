@@ -238,11 +238,11 @@ __duct_git_config() {
 
 # git credential
 
-# Git URL to set credential for (inherit `GIT_USER_SERVER`).
-declare -g DUCT_GIT_CREDENTIAL_SERVER="${DUCT_GIT_CREDENTIAL_SERVER:-"${GIT_USER_SERVER:-}"}"
+# Git URL to set credential for.
+declare -g DUCT_GIT_CREDENTIAL_SERVER="${DUCT_GIT_CREDENTIAL_SERVER:-}"
 
-# Token, base64 is supported (inherit `GIT_USER_TOKEN`).
-declare -g DUCT_GIT_CREDENTIAL_TOKEN="${DUCT_GIT_CREDENTIAL_TOKEN:-"${GIT_USER_TOKEN:-}"}"
+# Token, base64 is supported.
+declare -g DUCT_GIT_CREDENTIAL_TOKEN="${DUCT_GIT_CREDENTIAL_TOKEN:-}"
 
 # Username (commonly unused with token).
 declare -g DUCT_GIT_CREDENTIAL_USER="${DUCT_GIT_CREDENTIAL_USER:-"git"}"
