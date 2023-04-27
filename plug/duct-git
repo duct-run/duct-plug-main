@@ -1486,6 +1486,12 @@ __duct_git_load() {
   local GIT_LOAD_RC=0
 
   __duct_bin_check "${_DUCT_GIT_LOAD_REQUIREMENTS[@]}" || GIT_LOAD_RC=$?
+
+  if [[ "$GIT_LOAD_RC" -gt 0 ]]
+  then
+    return $GIT_LOAD_RC
+  fi
+
   __duct_ver_check "$DUCT_GIT_BINARY" "$_DUCT_GIT_LOAD_GIT_VERSION" 3 || GIT_LOAD_RC=$?
 
   DUCT_BIN_CHECK_WARNING=true \
