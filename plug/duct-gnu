@@ -62,6 +62,7 @@ __duct_gnu_tools() {
   local GNU_TOOLS_BIN
   local GNU_TOOLS_RC=0
   local GNU_TOOLS_SET
+  local GNU_TOOLS_VER
 
   __duct_intl
 
@@ -97,7 +98,9 @@ __duct_gnu_tools() {
 
     if [[ -n "$GNU_TOOLS_BIN" ]]
     then
-      if [[ $( command "$GNU_TOOLS_BIN" --version 2>/dev/null || : ) =~ (GNU) ]]
+      GNU_TOOLS_VER="$( command "$GNU_TOOLS_BIN" --version 2>/dev/null || :  )"
+
+      if [[ "$GNU_TOOLS_VER" =~ (GNU) && ! "$GNU_TOOLS_VER" =~ (not GNU) ]]
       then
         __duct_msg d "'$GNU_TOOLS_BIN' gnu version found"
         DUCT_GNU_TOOLS[$GNU_TOOLS_SET]="${GNU_TOOLS_MAP[$GNU_TOOLS_SET]}"
