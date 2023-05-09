@@ -31,9 +31,7 @@ declare -r -a _DUCT_LINTER_EDITORCONFIG_EXCLUDE=(
   '\.pfx$'
 )
 
-declare -r -a _DUCT_LINTER_EDITORCONFIG_FILES=(
-  '**/*'
-)
+declare -r -a _DUCT_LINTER_EDITORCONFIG_FILES=()
 
 declare -r -a _DUCT_LINTER_EDITORCONFIG_OPTIONS=(
   -verbose
@@ -52,30 +50,17 @@ declare -g DUCT_LINTER_EDITORCONFIG_BINARY="${DUCT_LINTER_EDITORCONFIG_BINARY:-"
 __duct_linter_editorconfig() {
   local -a EDITORCONFIG_FILES=( "${@:-${DUCT_LINTER_EDITORCONFIG_FILES[@]}}" )
 
-  local -a EDITORCONFIG_LINT=()
   local -a EDITORCONFIG_OPTS=( "${DUCT_LINTER_EDITORCONFIG_OPTIONS[@]}" )
   local EDITORCONFIG_EXCL
-  local EDITORCONFIG_ITEM
 
   # build exclude
   EDITORCONFIG_EXCL="$( IFS="|"; printf "%s" "${DUCT_LINTER_EDITORCONFIG_EXCLUDE[*]}" )"
   EDITORCONFIG_OPTS+=( -exclude "$EDITORCONFIG_EXCL" )
 
-  for EDITORCONFIG_ITEM in "${EDITORCONFIG_FILES[@]}"
-  do
-    # shellcheck disable=SC2206
-    EDITORCONFIG_LINT+=( $EDITORCONFIG_ITEM )
-  done
+  __duct_msg n "editorconfig ${EDITORCONFIG_OPTS[*]} ${EDITORCONFIG_FILES[*]}"
 
-  if [[ "${#EDITORCONFIG_LINT[@]}" -ge 1 ]]
-  then
-    __duct_msg n "editorconfig ${EDITORCONFIG_OPTS[*]} ${EDITORCONFIG_FILES[*]}"
-
-    # shellcheck disable=SC2086
-    __duct_run "$DUCT_LINTER_EDITORCONFIG_BINARY" "${EDITORCONFIG_OPTS[@]}" \"${EDITORCONFIG_FILES[*]}\"
-  else
-    __duct_msg w "editorconfig no files! (${EDITORCONFIG_FILES[*]})"
-  fi
+  # shellcheck disable=SC2068
+  __duct_run "$DUCT_LINTER_EDITORCONFIG_BINARY" "${EDITORCONFIG_OPTS[@]}" ${EDITORCONFIG_FILES[@]}
 }
 
 # @func duct linter hadolint
