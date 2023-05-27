@@ -20,27 +20,6 @@
 # @plug duct-gnu
 # @desc GNU tools.
 
-# @func gnu load
-
-# @desc Check GNU tools prerequisites.
-# @intl true
-# @life core
-# @deps duct-run
-# @opts
-__duct_gnu_load() {
-  local GNU_LOAD_RC=0
-
-  __duct_intl
-
-  # check gnu tools
-  __duct_gnu_tools || GNU_LOAD_RC=$?
-
-  if [[ "$GNU_LOAD_RC" -gt 0 ]]
-  then
-    __duct_msg w "gnu tools incomplete!"
-  fi
-}
-
 # @func gnu tools
 
 # @fvar GNU tools mapping (set at runtime).
@@ -190,4 +169,16 @@ __duct_gnu_tar() {
     # internal
     command "${DUCT_GNU_TOOLS["tar"]}" "$@"
   fi
+}
+
+# @func gnu load
+
+# @desc Check GNU tools prerequisites.
+# @intl true
+# @life core
+# @deps duct-run
+# @opts
+__duct_gnu_load() {
+  __duct_intl
+  __duct_gnu_tools
 }
