@@ -30,7 +30,7 @@ declare -r -a _DUCT_JQ_OPTIONS=(
 )
 
 # @fvar jq binary.
-declare -g DUCT_JQ_BIN="${DUCT_JQ_BIN:-"jq"}"
+declare -g DUCT_JQ_BINARY="${DUCT_JQ_BINARY:-"jq"}"
 
 # @fvar jq options.
 declare -g -a DUCT_JQ_OPTIONS=( "${DUCT_JQ_OPTIONS[@]:-${_DUCT_JQ_OPTIONS[@]}}" )
@@ -59,20 +59,20 @@ __duct_jq() {
   do
     if [[ -f "$JQ_ITEM" ]]
     then
-      __duct_run "$DUCT_JQ_BIN" "${DUCT_JQ_OPTIONS[@]}" "${JQ_FILTER[@]}" "${JQ_OPTS[@]}"
+      __duct_run "$DUCT_JQ_BINARY" "${DUCT_JQ_OPTIONS[@]}" "${JQ_FILTER[@]}" "${JQ_OPTS[@]}"
       return
     fi
   done
 
   readarray -t -n 0 JQ_IN
-  __duct_run "$DUCT_JQ_BIN" "${DUCT_JQ_OPTIONS[@]}" "${JQ_OPTS[@]}" "${JQ_FILTER[@]}" <<< "${JQ_IN[@]}"
+  __duct_run "$DUCT_JQ_BINARY" "${DUCT_JQ_OPTIONS[@]}" "${JQ_OPTS[@]}" "${JQ_FILTER[@]}" <<< "${JQ_IN[@]}"
 }
 
 # @func duct jq load
 
 # @fvar List of duct-jq requirements.
 declare -r -a _DUCT_JQ_LOAD_REQUIREMENTS=(
-  "${DUCT_JQ_BIN}"
+  "$DUCT_JQ_BINARY"
 )
 
 # @fvar Minimum supported jq version.
@@ -92,7 +92,7 @@ __duct_jq_load() {
 
   if [[ "$JQ_LOAD_RC" -eq 0 ]]
   then
-    __duct_ver_check "$DUCT_JQ_BIN" "$_DUCT_JQ_LOAD_JQ_VERSION" 1 || JQ_LOAD_RC=$?
+    __duct_ver_check "$DUCT_JQ_BINARY" "$_DUCT_JQ_LOAD_JQ_VERSION" 1 || JQ_LOAD_RC=$?
   fi
 
   return $JQ_LOAD_RC
