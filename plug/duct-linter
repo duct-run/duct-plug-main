@@ -291,8 +291,6 @@ __duct_linter_yamllint() {
 
 # @func duct tflint
 
-declare -g DUCT_LINTER_TFLINT_BINARY="${DUCT_LINTER_TFLINT_BINARY:-"tflint"}"
-
 # @desc Alias of `duct terraform tflint`.
 # @intl false
 # @life main
@@ -300,6 +298,7 @@ declare -g DUCT_LINTER_TFLINT_BINARY="${DUCT_LINTER_TFLINT_BINARY:-"tflint"}"
 # @opts
 __duct_linter_tflint() {
   __duct_msg w "use 'duct terraform tflint' instead!"
+  __duct_deps duct-terraform
   __duct_terraform_tflint "$@"
 }
 
@@ -307,13 +306,12 @@ __duct_linter_tflint() {
 
 # @fvar List of duct-linter requirements.
 declare -r -a _DUCT_LINTER_LOAD_REQUIREMENTS=(
-  "${DUCT_LINTER_EDITORCONFIG_BINARY}"
-  "${DUCT_LINTER_HADOLINT_BINARY}"
-  "${DUCT_LINTER_MARKDOWNLINT_BINARY}"
-  "${DUCT_LINTER_PYLINT_BINARY}"
-  "${DUCT_LINTER_SHELLCHECK_BINARY}"
-  "${DUCT_LINTER_TFLINT_BINARY}"
-  "${DUCT_LINTER_YAMLLINT_BINARY}"
+  "$DUCT_LINTER_EDITORCONFIG_BINARY"
+  "$DUCT_LINTER_HADOLINT_BINARY"
+  "$DUCT_LINTER_MARKDOWNLINT_BINARY"
+  "$DUCT_LINTER_PYLINT_BINARY"
+  "$DUCT_LINTER_SHELLCHECK_BINARY"
+  "$DUCT_LINTER_YAMLLINT_BINARY"
 )
 
 # @desc Check duct-linter requirements.
@@ -323,10 +321,5 @@ declare -r -a _DUCT_LINTER_LOAD_REQUIREMENTS=(
 # @opts
 __duct_linter_load() {
   __duct_intl
-
-  local LINTER_LOAD_RC=0
-
-  __duct_bin_check "${_DUCT_LINTER_LOAD_REQUIREMENTS[@]}" || LINTER_LOAD_RC=$?
-
-  return $LINTER_LOAD_RC
+  __duct_bin_check "${_DUCT_LINTER_LOAD_REQUIREMENTS[@]}"
 }
