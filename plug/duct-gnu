@@ -25,7 +25,7 @@
 # @fvar GNU tools mapping (set at runtime).
 declare -g -A DUCT_GNU_TOOLS=()
 
-# GNU tools mapping (defaults).
+# @fvar GNU tools mapping (defaults).
 declare -g DUCT_GNU_TOOLS["awk"]="awk"
 declare -g DUCT_GNU_TOOLS["grep"]="grep"
 declare -g DUCT_GNU_TOOLS["sed"]="sed"
@@ -33,7 +33,7 @@ declare -g DUCT_GNU_TOOLS["tar"]="tar"
 
 # @desc Set GNU tools to the OS based binaries.
 # @intl true
-# @life core
+# @life main
 # @deps duct-run
 # @opts
 __duct_gnu_tools() {
@@ -99,11 +99,11 @@ __duct_gnu_tools() {
   fi
 }
 
-# @func gnu awk
+# @func duct gnu awk
 
 # @desc Run GNU version of `awk` (if available).
 # @intl false
-# @life core
+# @life main
 # @deps duct-run
 # @opts <awk-options>
 __duct_gnu_awk() {
@@ -117,11 +117,11 @@ __duct_gnu_awk() {
   fi
 }
 
-# @func gnu grep
+# @func duct gnu grep
 
 # @desc Run GNU version of `grep` (if available).
 # @intl false
-# @life core
+# @life main
 # @deps duct-run
 # @opts <grep-options>
 __duct_gnu_grep() {
@@ -135,11 +135,11 @@ __duct_gnu_grep() {
   fi
 }
 
-# @func gnu sed
+# @func duct gnu sed
 
 # @desc Run GNU version of `sed` (if available).
 # @intl false
-# @life core
+# @life main
 # @deps duct-run
 # @opts <sed-options>
 __duct_gnu_sed() {
@@ -153,11 +153,11 @@ __duct_gnu_sed() {
   fi
 }
 
-# @func gnu tar
+# @func duct gnu tar
 
 # @desc Run GNU version of `tar` (if available).
 # @intl false
-# @life core
+# @life main
 # @deps duct-run
 # @opts <tar-options>
 __duct_gnu_tar() {
@@ -171,12 +171,12 @@ __duct_gnu_tar() {
   fi
 }
 
-# @func gnu load
+# @func duct gnu load
 
-# @desc Check GNU tools prerequisites.
+# @desc Check duct-gnu requirements.
 # @intl true
-# @life core
-# @deps duct-run
+# @life main
+# @deps
 # @opts
 __duct_gnu_load() {
   __duct_intl
