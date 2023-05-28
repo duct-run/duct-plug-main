@@ -153,3 +153,13 @@ __duct_pkg() {
   fi
 }
 readonly -f __duct_pkg
+
+declare  -r -a DUCT_PKG_LOAD_REQUIREMENTS=(
+  "$DUCT_PKG_BIN"
+)
+
+__duct_pkg_load() {
+  __duct_intl
+
+  __duct_bin_check "${DUCT_PKG_LOAD_REQUIREMENTS[@]}"
+}

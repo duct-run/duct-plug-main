@@ -35,10 +35,5 @@ declare -r -a _DUCT_GNUPG_LOAD_REQUIREMENTS=(
 # @opts
 __duct_gnupg_load() {
   __duct_intl
-
-  local GNUPG_LOAD_RC=0
-
-  __duct_bin_check "${_DUCT_GNUPG_LOAD_REQUIREMENTS[@]}" || GNUPG_LOAD_RC=$?
-
-  return $GNUPG_LOAD_RC
+  __duct_bin_check "${_DUCT_GNUPG_LOAD_REQUIREMENTS[@]}"
 }

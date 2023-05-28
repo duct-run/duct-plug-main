@@ -29,8 +29,8 @@ declare -a -r _DUCT_BREW_FORMULA=()
 # List of Cask to be installed (defaults).
 declare -a -r _DUCT_BREW_CASK=()
 
-# Homebrew binary to use (set at run-time).
-declare -g DUCT_BREW_BIN=""
+# Homebrew binary to use.
+declare -g DUCT_BREW_BIN="${DUCT_BREW_BIN:-"brew"}"
 
 # Homebrew custom PATH to avoid warnings (advanced only!).
 declare -g DUCT_BREW_PATH=${DUCT_BREW_PATH:-}
@@ -269,3 +269,12 @@ __duct_brew() {
   fi
 }
 readonly -f __duct_brew
+
+declare  -r -a DUCT_BREW_LOAD_REQUIREMENTS=(
+  "$DUCT_BREW_BIN"
+)
+
+__duct_brew_load() {
+  __duct_intl
+  __duct_bin_check "${DUCT_BREW_LOAD_REQUIREMENTS[@]}"
+}

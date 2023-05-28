@@ -20,31 +20,9 @@
 # @plug duct-ssh
 # @desc OpenSSH stuff.
 
-# @func duct ssh load
+# @func duct ssh keygen
 
-# @fvar List of duct-ssh requirements.
-declare -r _DUCT_SSH_LOAD_REQUIREMENTS=(
-  ssh-add
-  ssh-agent
-  ssh-keygen
-)
-
-# @desc Check duct-ssh requirements.
-# @intl true
-# @life main
-# @deps
-# @opts
-__duct_ssh_load() {
-  __duct_intl
-
-  local SSH_LOAD_RC=0
-
-  __duct_bin_check "${_DUCT_SSH_LOAD_REQUIREMENTS[@]}" || SSH_LOAD_RC=$?
-
-  return $SSH_LOAD_RC
-}
-
-# ssh keygen
+declare -g DUCT_SSH_KEYGEN_BINARY="${DUCT_SSH_KEYGEN_BINARY:-"ssh-keygen"}"
 
 # Number of KDF (key derivation function) rounds to use.
 declare -g -i DUCT_SSH_KEYGEN_ROUNDS="${DUCT_SSH_KEYGEN_ROUNDS:-256}"
@@ -82,8 +60,6 @@ __duct_ssh_keygen() {
   local -a SSH_KEYGEN_OPTS=()
   local SSH_KEYGEN_PASSPHRASE=""
 
-  __duct_bin_check "ssh-keygen" || return
-
   if [[ -z "$DUCT_SSH_KEYGEN_PASSPHRASE" ]]
   then
     __duct_msg w "empty passphrase!"
@@ -119,7 +95,7 @@ __duct_ssh_keygen() {
 }
 readonly -f __duct_ssh_keygen
 
-# ssh keyscan
+# @func duct ssh keyscan
 
 # Host for SSH key scan.
 declare -g DUCT_SSH_KEYSCAN_HOST="${DUCT_SSH_KEYSCAN_HOST:-}"
@@ -168,6 +144,9 @@ __duct_ssh_keyscan() {
 readonly -f __duct_ssh_keyscan
 
 # ssh agent
+
+declare -g DUCT_SSH_AGENT_BINARY="${DUCT_SSH_AGENT_BINARY:-"ssh-agent"}"
+declare -g DUCT_SSH_ADD_BINARY="${DUCT_SSH_ADD_BINARY:-"ssh-add"}"
 
 # Optional SSH key to add to the agent (base64 or plain).
 declare -g DUCT_SSH_AGENT_KEY_ADD="${DUCT_SSH_AGENT_KEY_ADD:-}"
@@ -272,3 +251,22 @@ __duct_ssh_agent_kill() {
   set -u
 }
 readonly -f __duct_ssh_agent_kill
+
+# @func duct ssh load
+
+# @fvar List of duct-ssh requirements.
+declare -r _DUCT_SSH_LOAD_REQUIREMENTS=(
+  "$DUCT_SSH_ADD_BINARY"
+  "$DUCT_SSH_AGENT_BINARY"
+  "$DUCT_SSH_KEYGEN_BINARY"
+)
+
+# @desc Check duct-ssh requirements.
+# @intl true
+# @life main
+# @deps
+# @opts
+__duct_ssh_load() {
+  __duct_intl
+  __duct_bin_check "${_DUCT_SSH_LOAD_REQUIREMENTS[@]}"
+}
