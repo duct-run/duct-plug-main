@@ -593,14 +593,10 @@ __duct_terraform_init() {
 
   __duct_terraform_config
 
-  if [[ "${TF_INIT_OPTS[*]}" =~ (-backend=false) ]]
+  if [[ ! "${TF_INIT_OPTS[*]}" =~ (-backend=false) ]]
   then
-    __duct_terraform_run init "${DUCT_TERRAFORM_INIT_OPTIONS[@]}" "${TF_INIT_OPTS[@]}" "${TF_INIT_GET[@]}"
-    _DUCT_TERRAFORM_INIT_DONE=false
-    return
+    __duct_terraform_backend
   fi
-
-  __duct_terraform_backend
 
   if [[ "$_DUCT_TERRAFORM_INIT_DONE" == false ]]
   then
