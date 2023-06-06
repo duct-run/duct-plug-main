@@ -29,6 +29,9 @@ declare -g DUCT_TERRAFORM_RELEASE_URL="${DUCT_TERRAFORM_RELEASE_URL:-"https://ap
 # @pvar Terraform global work dir.
 declare -g DUCT_TERRAFORM_WRKDIR="${DUCT_TERRAFORM_WRKDIR:-$PWD}"
 
+# @pvar Terraform global change dir.
+declare -g DUCT_TERRAFORM_CHDIR="${DUCT_TERRAFORM_CHDIR:-"tests/duct"}"
+
 # @func duct terraform config
 
 # shellcheck disable=SC2016
@@ -176,7 +179,6 @@ declare -g _DUCT_TERRAFORM_RUN_TFLINT_VERSION_DONE="${_DUCT_TERRAFORM_RUN_TFLINT
 declare -g _DUCT_TERRAFORM_RUN_TFSEC_VERSION_DONE="${_DUCT_TERRAFORM_RUN_TFSEC_VERSION_DONE:-false}"
 declare -g _DUCT_TERRAFORM_RUN_TFSWITCH_VERSION_DONE="${_DUCT_TERRAFORM_RUN_TFSWITCH_VERSION_DONE:-false}"
 
-declare -g DUCT_TERRAFORM_RUN_CHDIR="${DUCT_TERRAFORM_RUN_CHDIR:-"tests/duct"}"
 declare -g DUCT_TERRAFORM_RUN_OUTPUT="${DUCT_TERRAFORM_RUN_OUTPUT:-true}"
 declare -g DUCT_TERRAFORM_RUN_TERRAFORM_BINARY="${DUCT_TERRAFORM_RUN_TERRAFORM_BINARY:-"terraform"}"
 declare -g DUCT_TERRAFORM_RUN_TERRAFORM_VERSION="${DUCT_TERRAFORM_RUN_TERRAFORM_VERSION:-false}"
@@ -200,7 +202,7 @@ __duct_terraform_run() {
   shift
   local -a TF_RUN_OPTS=( "$@" )
 
-  local -a TF_RUN_CHDIR
+  local -a TF_RUN_CHDIR=()
   local -a TF_RUN_MATCH=()
   local -a TF_RUN_RCMD
   local -a TF_RUN_TEMP=()
@@ -257,12 +259,12 @@ __duct_terraform_run() {
     __duct_run "$DUCT_TERRAFORM_RUN_TFSWITCH_BINARY" "${TF_RUN_OPTS[@]}"
   else
     # terraform chdir
-    if [[ -n "$DUCT_TERRAFORM_RUN_CHDIR" && -d "$DUCT_TERRAFORM_RUN_CHDIR" ]]
+    if [[ -n "$DUCT_TERRAFORM_CHDIR" && -d "$DUCT_TERRAFORM_CHDIR" ]]
     then
       # skip chdir for fmt
       if [[ "$TF_RUN_CMD" != "fmt" ]]
       then
-        TF_RUN_CHDIR+=( -chdir="$DUCT_TERRAFORM_RUN_CHDIR" )
+        TF_RUN_CHDIR+=( -chdir="$DUCT_TERRAFORM_CHDIR" )
       fi
     fi
 
@@ -316,7 +318,12 @@ __duct_terraform_run() {
       TF_RUN_OPTS=( "${TF_RUN_MATCH[@]}" "${TF_RUN_OPTS[@]}" )
     fi
 
-    __duct_msg n "terraform $TF_RUN_CMD ${TF_RUN_OPTS[*]}"
+    if [[ "${#TF_RUN_CHDIR[@]}" -gt 0 ]]
+    then
+      __duct_msg n "$DUCT_TERRAFORM_RUN_TERRAFORM_BINARY ${TF_RUN_CHDIR[*]} $TF_RUN_CMD ${TF_RUN_OPTS[*]}"
+    else
+      __duct_msg n "$DUCT_TERRAFORM_RUN_TERRAFORM_BINARY $TF_RUN_CMD ${TF_RUN_OPTS[*]}"
+    fi
 
     if [[ "$DUCT_TERRAFORM_RUN_OUTPUT" == true ]]
     then
@@ -471,7 +478,6 @@ declare -g _DUCT_TERRAFORM_BACKEND_DONE="${_DUCT_TERRAFORM_BACKEND_DONE:-false}"
 # shellcheck disable=SC2206
 declare -g -a DUCT_TERRAFORM_BACKEND_CONFIG=( ${DUCT_TERRAFORM_BACKEND_CONFIG[@]:-${_DUCT_TERRAFORM_BACKEND_CONFIG[@]}} )
 
-declare -g DUCT_TERRAFORM_BACKEND_CHDIR="${DUCT_TERRAFORM_BACKEND_CHDIR:-"tests/duct"}"
 declare -g DUCT_TERRAFORM_BACKEND_FILE="${DUCT_TERRAFORM_BACKEND_FILE:-"terraform-backend.tf"}"
 declare -g DUCT_TERRAFORM_BACKEND_MASK="${DUCT_TERRAFORM_BACKEND_MASK:-true}"
 declare -g DUCT_TERRAFORM_BACKEND_MASK_STRING="${DUCT_TERRAFORM_BACKEND_MASK_STRING:-"[TFSECRET]"}"
@@ -495,9 +501,9 @@ __duct_terraform_backend() {
     if [[ -n "$DUCT_TERRAFORM_BACKEND_TYPE" && "${#DUCT_TERRAFORM_BACKEND_CONFIG[@]}" -ge 1 ]]
     then
 
-      if [[ -n "$DUCT_TERRAFORM_BACKEND_CHDIR" && -d "$DUCT_TERRAFORM_BACKEND_CHDIR" ]]
+      if [[ -n "$DUCT_TERRAFORM_CHDIR" && -d "$DUCT_TERRAFORM_CHDIR" ]]
       then
-        TF_BACKEND_FILE="${DUCT_TERRAFORM_BACKEND_CHDIR}/${DUCT_TERRAFORM_BACKEND_FILE}"
+        TF_BACKEND_FILE="${DUCT_TERRAFORM_CHDIR}/${DUCT_TERRAFORM_BACKEND_FILE}"
       else
         TF_BACKEND_FILE="$DUCT_TERRAFORM_BACKEND_FILE"
       fi
