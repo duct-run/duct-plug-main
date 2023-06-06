@@ -1037,7 +1037,8 @@ __duct_terraform_tflint() {
 
   local -a TF_TFLINT_FORMAT=( --format="$DUCT_TERRAFORM_TFLINT_FORMAT" )
 
-  __duct_terraform_init -backend=false
+  DUCT_TERRAFORM_INIT_RECURSIVE=true \
+    __duct_terraform_init -backend=false
 
   if [[ "$_DUCT_TERRAFORM_TFLINT_INIT_DONE" == false ]]
   then
@@ -1076,7 +1077,8 @@ __duct_terraform_tfsec() {
   local -a TF_TFSEC_FILE
   local -a TF_TFSEC_FORMAT=( --format="$DUCT_TERRAFORM_TFSEC_FORMAT" )
 
-  __duct_terraform_init -backend=false
+  DUCT_TERRAFORM_INIT_RECURSIVE=true \
+     __duct_terraform_init -backend=false
 
   if [[ -n "$DUCT_TERRAFORM_TFSEC_FORMAT_FILE" ]]
   then
