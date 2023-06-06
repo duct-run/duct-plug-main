@@ -1034,10 +1034,11 @@ __duct_terraform_tflint() {
 
 # @func duct terraform tfsec
 
-declare -r -a _DUCT_TERRAFORM_TFSEC_OPTIONS=()
+declare -r -a _DUCT_TERRAFORM_TFSEC_OPTIONS=(
+  --force-all-dirs
+)
 
-# shellcheck disable=SC2206
-declare -g -a DUCT_TERRAFORM_TFSEC_OPTIONS=( ${DUCT_TERRAFORM_TFSEC_OPTIONS[@]:-${_DUCT_TERRAFORM_TFSEC_OPTIONS[@]}} )
+declare -g -a DUCT_TERRAFORM_TFSEC_OPTIONS=( "${DUCT_TERRAFORM_TFSEC_OPTIONS[@]:-${_DUCT_TERRAFORM_TFSEC_OPTIONS[@]}}" )
 
 declare -g DUCT_TERRAFORM_TFSEC_FORMAT="${DUCT_TERRAFORM_TFSEC_FORMAT:-"lovely"}"
 declare -g DUCT_TERRAFORM_TFSEC_FORMAT_FILE="${DUCT_TERRAFORM_TFSEC_FORMAT_FILE:-}"
