@@ -996,6 +996,7 @@ __duct_terraform_docs() {
 declare -r -a _DUCT_TERRAFORM_TFLINT_OPTIONS=(
   --color
   --module
+  --recursive
 )
 declare -g _DUCT_TERRAFORM_TFLINT_INIT_DONE="${_DUCT_TERRAFORM_TFLINT_INIT_DONE:-false}"
 
