@@ -589,6 +589,8 @@ declare -g _DUCT_TERRAFORM_INIT_DONE="${_DUCT_TERRAFORM_INIT_DONE:-false}"
 
 declare -g -a DUCT_TERRAFORM_INIT_OPTIONS=( "${DUCT_TERRAFORM_INIT_OPTIONS[@]:-${_DUCT_TERRAFORM_INIT_OPTIONS[@]}}" )
 
+declare -g DUCT_TERRAFORM_INIT_RECURSIVE="${DUCT_TERRAFORM_INIT_RECURSIVE:-false}"
+
 # @desc
 # @intl false
 # @life main
@@ -604,9 +606,23 @@ __duct_terraform_init() {
     __duct_terraform_backend
   fi
 
+  if [[ "$DUCT_TERRAFORM_INIT_RECURSIVE" == true ]]
+  then
+    __duct_msg d "recursive mode"
+
+    if [[ -n "$DUCT_TERRAFORM_CHDIR" && -d "$DUCT_TERRAFORM_CHDIR" ]]
+    then
+      DUCT_TERRAFORM_CHDIR="" \
+        __duct_terraform_run init "${DUCT_TERRAFORM_INIT_OPTIONS[@]}" "${TF_INIT_OPTS[@]}"
+    fi
+
+    __duct_terraform_run init "${DUCT_TERRAFORM_INIT_OPTIONS[@]}" "${TF_INIT_OPTS[@]}"
+    _DUCT_TERRAFORM_INIT_DONE=true
+  fi
+
   if [[ "$_DUCT_TERRAFORM_INIT_DONE" == false ]]
   then
-    __duct_terraform_run init "${DUCT_TERRAFORM_INIT_OPTIONS[@]}" "${TF_INIT_OPTS[@]}" "${TF_INIT_GET[@]}"
+    __duct_terraform_run init "${DUCT_TERRAFORM_INIT_OPTIONS[@]}" "${TF_INIT_OPTS[@]}"
     _DUCT_TERRAFORM_INIT_DONE=true
   fi
 }
