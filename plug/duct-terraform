@@ -606,7 +606,7 @@ __duct_terraform_init() {
     __duct_terraform_backend
   fi
 
-  if [[ "$DUCT_TERRAFORM_INIT_RECURSIVE" == true ]]
+  if [[ "$DUCT_TERRAFORM_INIT_RECURSIVE" == true && "$_DUCT_TERRAFORM_INIT_DONE" == false ]]
   then
     __duct_msg d "recursive mode"
 
