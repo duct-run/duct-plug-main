@@ -343,3 +343,16 @@ __duct_ansible_lint() {
   return
 }
 readonly -f __duct_ansible_lint
+
+
+declare -r -a _DUCT_ANSIBLE_LOAD_REQUIREMENTS=(
+  ansible-galaxy
+  ansible-lint
+  ansible-playbook
+  ansible-vault
+)
+
+__duct_ansible_load() {
+  __duct_intl
+  __duct_bin_check "${_DUCT_ANSIBLE_LOAD_REQUIREMENTS[@]}"
+}
