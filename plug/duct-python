@@ -36,7 +36,7 @@ declare -r -a _DUCT_PYTHON_PIP_OPTIONS=(
 declare -r -a _DUCT_PYTHON_PIP_REQUIREMENTS=()
 
 # @fvar Python pip binary.
-declare -g DUCT_PYTHON_PIP_BIN="${DUCT_PYTHON_PIP_BIN:-"pip3"}"
+declare -g DUCT_PYTHON_PIP_BINARY="${DUCT_PYTHON_PIP_BINARY:-"pip3"}"
 
 # @fvar Python pip options.
 declare -g -a DUCT_PYTHON_PIP_OPTIONS=( "${DUCT_PYTHON_PIP_OPTIONS[@]:-${_DUCT_PYTHON_PIP_OPTIONS[@]}}" )
@@ -97,13 +97,13 @@ __duct_python_pip() {
   if [[ "${#PIP_REQ[@]}" -gt 0 ]]
   then
     __duct_msg n "installing ${PIP_REQ[*]}"
-    __duct_run "$DUCT_PYTHON_PIP_BIN" install "${DUCT_PYTHON_PIP_OPTIONS[@]}" "${PIP_REQ[@]}"
+    __duct_run "$DUCT_PYTHON_PIP_BINARY" install "${DUCT_PYTHON_PIP_OPTIONS[@]}" "${PIP_REQ[@]}"
   fi
 
   for PIP_ITEM in "${PIP_REQ_FILES[@]}"
   do
     __duct_msg n "installing from $PIP_ITEM"
-    __duct_run "$DUCT_PYTHON_PIP_BIN" install "${DUCT_PYTHON_PIP_OPTIONS[@]}" --requirement "$PIP_ITEM"
+    __duct_run "$DUCT_PYTHON_PIP_BINARY" install "${DUCT_PYTHON_PIP_OPTIONS[@]}" --requirement "$PIP_ITEM"
   done
 }
 readonly -f __duct_python_pip
@@ -129,7 +129,7 @@ declare -g DUCT_PYTHON_VENV_CLEAR=${DUCT_PYTHON_VENV_CLEAR:-false}
 declare -g DUCT_PYTHON_VENV_DEACTIVATE=${DUCT_PYTHON_VENV_DEACTIVATE:-false}
 
 # @fvar Python binary/interpreter.
-declare -g DUCT_PYTHON_VENV_BIN=${DUCT_PYTHON_VENV_BIN:-"python3"}
+declare -g DUCT_PYTHON_VENV_BINARY=${DUCT_PYTHON_VENV_BINARY:-"python3"}
 
 # @fvar Python venv options.
 declare -g -a DUCT_PYTHON_VENV_OPTIONS=( "${DUCT_PYTHON_VENV_OPTIONS[@]:-${_DUCT_PYTHON_VENV_OPTIONS[@]}}" )
@@ -171,7 +171,7 @@ __duct_python_venv() {
   fi
 
   __duct_msg n "$VENV_MSG $VENV_PATH"
-  __duct_run "$DUCT_PYTHON_VENV_BIN" -m venv "${DUCT_PYTHON_VENV_OPTIONS[@]}" "${VENV_OPTS[@]}" "$VENV_PATH" || VENV_RC=$?
+  __duct_run "$DUCT_PYTHON_VENV_BINARY" -m venv "${DUCT_PYTHON_VENV_OPTIONS[@]}" "${VENV_OPTS[@]}" "$VENV_PATH" || VENV_RC=$?
 
   if [[ -d "$VENV_PATH/lib" ]]
   then
@@ -204,8 +204,8 @@ __duct_python_venv() {
 
 # @fvar List of duct-python requirements.
 declare -r -a _DUCT_PYTHON_LOAD_REQUIREMENTS=(
-  "${DUCT_PYTHON_VENV_BIN}"
-  "${DUCT_PYTHON_PIP_BIN}"
+  "$DUCT_PYTHON_VENV_BINARY"
+  "$DUCT_PYTHON_PIP_BINARY"
 )
 
 # @desc Check duct-python requirements.
@@ -215,10 +215,5 @@ declare -r -a _DUCT_PYTHON_LOAD_REQUIREMENTS=(
 # @opts
 __duct_python_load() {
   __duct_intl
-
-  local PYTHON_LOAD_RC=0
-
-  __duct_bin_check "${_DUCT_PYTHON_LOAD_REQUIREMENTS[@]}" || PYTHON_LOAD_RC=$?
-
-  return $PYTHON_LOAD_RC
+  __duct_bin_check "${_DUCT_PYTHON_LOAD_REQUIREMENTS[@]}"
 }
