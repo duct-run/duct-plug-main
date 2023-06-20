@@ -1059,6 +1059,7 @@ __duct_terraform_tflint() {
 
 declare -r -a _DUCT_TERRAFORM_TFSEC_OPTIONS=(
   --force-all-dirs
+  --exclude-path .terraform
 )
 
 declare -g -a DUCT_TERRAFORM_TFSEC_OPTIONS=( "${DUCT_TERRAFORM_TFSEC_OPTIONS[@]:-${_DUCT_TERRAFORM_TFSEC_OPTIONS[@]}}" )
