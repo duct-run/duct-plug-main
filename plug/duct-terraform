@@ -882,6 +882,7 @@ declare -g -a DUCT_TERRAFORM_STATE_LIST_OPTIONS=( ${DUCT_TERRAFORM_STATE_LIST_OP
 __duct_terraform_state_list() {
   local -a TF_STATE_LIST_OPTS=( "$@" )
 
+  __duct_terraform_init
   __duct_terraform_run state list "${DUCT_TERRAFORM_STATE_LIST_OPTIONS[@]}" "${TF_STATE_LIST_OPTS[@]}"
 }
 
