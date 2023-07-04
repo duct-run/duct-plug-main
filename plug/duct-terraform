@@ -985,6 +985,7 @@ __duct_terraform_state_rm() {
 
   for TF_STATE_RM_ITEM in "${TF_STATE_RM_ADDR[@]}"
   do
+    __duct_terraform_init
     __duct_terraform_run state rm "${DUCT_TERRAFORM_STATE_RM_OPTIONS[@]}" "${TF_STATE_RM_OPTS[@]}" "$TF_STATE_RM_ITEM"
   done
 }
