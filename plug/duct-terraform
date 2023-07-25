@@ -590,6 +590,7 @@ declare -g _DUCT_TERRAFORM_INIT_DONE="${_DUCT_TERRAFORM_INIT_DONE:-false}"
 declare -g -a DUCT_TERRAFORM_INIT_OPTIONS=( "${DUCT_TERRAFORM_INIT_OPTIONS[@]:-${_DUCT_TERRAFORM_INIT_OPTIONS[@]}}" )
 
 declare -g DUCT_TERRAFORM_INIT_RECURSIVE="${DUCT_TERRAFORM_INIT_RECURSIVE:-false}"
+declare -g DUCT_TERRAFORM_INIT_RECURSIVE_MATCH="${DUCT_TERRAFORM_INIT_RECURSIVE_MATCH:-"main.tf"}"
 
 # @desc
 # @intl false
@@ -598,6 +599,9 @@ declare -g DUCT_TERRAFORM_INIT_RECURSIVE="${DUCT_TERRAFORM_INIT_RECURSIVE:-false
 # @opts
 __duct_terraform_init() {
   local -a TF_INIT_OPTS=( "$@" )
+
+  local TF_INIT_MATCH
+  local TF_INIT_RDIR
 
   __duct_terraform_config
 
@@ -610,13 +614,14 @@ __duct_terraform_init() {
   then
     __duct_msg d "recursive mode"
 
-    if [[ -n "$DUCT_TERRAFORM_CHDIR" && -d "$DUCT_TERRAFORM_CHDIR" ]]
-    then
-      DUCT_TERRAFORM_CHDIR="" \
-        __duct_terraform_run init "${DUCT_TERRAFORM_INIT_OPTIONS[@]}" "${TF_INIT_OPTS[@]}"
-    fi
+    for TF_INIT_MATCH in "${DUCT_TERRAFORM_WRKDIR}"/**/"${DUCT_TERRAFORM_INIT_RECURSIVE_MATCH}"
+    do
+      TF_INIT_RDIR="${TF_INIT_MATCH%/*}"
 
-    __duct_terraform_run init "${DUCT_TERRAFORM_INIT_OPTIONS[@]}" "${TF_INIT_OPTS[@]}"
+      DUCT_TERRAFORM_CHDIR="$TF_INIT_RDIR" \
+        __duct_terraform_run init "${DUCT_TERRAFORM_INIT_OPTIONS[@]}" "${TF_INIT_OPTS[@]}"
+    done
+
     _DUCT_TERRAFORM_INIT_DONE=true
   fi
 
