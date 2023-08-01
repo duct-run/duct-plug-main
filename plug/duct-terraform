@@ -107,14 +107,14 @@ __duct_terraform_config() {
           fi
         fi
 
-        if [[ "$DUCT_TERRAFORM_CONFIG_MASK" == true && "$TF_CONFIG_KEY" =~ (password|token|secret) ]]
+        if [[ "$DUCT_TERRAFORM_CONFIG_MASK" == true && "$TF_CONFIG_KEY" =~ ^(password|token|secret)$ ]]
         then
           __duct_msg d "${TF_CONFIG_KEY}${TF_CONFIG_SET}${DUCT_TERRAFORM_CONFIG_MASK_STRING}"
         else
           __duct_msg d "${TF_CONFIG_KEY}${TF_CONFIG_SET}${TF_CONFIG_VAL}"
         fi
 
-        if [[ -n "$TF_CONFIG_SET" && "$TF_CONFIG_VAL" =~ (true|false|yes|no) ]]
+        if [[ -n "$TF_CONFIG_SET" && "$TF_CONFIG_VAL" =~ ^(true|false|yes|no)$ ]]
         then
           TF_CONFIG+=(
             "${TF_CONFIG_KEY}${TF_CONFIG_SET}${TF_CONFIG_VAL}"
