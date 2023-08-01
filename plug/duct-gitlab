@@ -232,7 +232,7 @@ __duct_gitlab_projects() {
     ;;
   esac
 
-  readarray -t GL_DATA < <( __duct_gitlab_paginate "projects?search=${GL_SEARCH}" "$GL_API_JQ" )
+  readarray -t GL_DATA < <( __duct_gitlab_paginate "projects?archived=false&search=${GL_SEARCH}" "$GL_API_JQ" )
 
   if [[ -n "$GL_FILTER" ]]
   then
