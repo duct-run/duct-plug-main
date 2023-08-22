@@ -426,12 +426,18 @@ __duct_terraform_run_out2json() {
     ;;
   esac
 
+  __duct_msg d "reading $TF_RUN_OUT2JSON_OUT"
+
   mapfile -t -n 0 TF_RUN_OUT2JSON_DATA < "$TF_RUN_OUT2JSON_OUT"
+
+  __duct_msg d "done"
 
   for TF_RUN_OUT2JSON_LINE in "${TF_RUN_OUT2JSON_DATA[@]}"
   do
     # remove ANSI escape codes
     TF_RUN_OUT2JSON_LINE="${TF_RUN_OUT2JSON_LINE//$'\e'\[*([0-9;])m/}"
+
+    __duct_msg d "$TF_RUN_OUT2JSON_LINE"
 
     if [[ "$TF_RUN_OUT2JSON_LINE" =~ $TF_RUN_OUT2JSON_MATCH ]]
     then
