@@ -434,8 +434,6 @@ __duct_terraform_run_out2json() {
     # remove ANSI escape codes
     TF_RUN_OUT2JSON_TEXT="${TF_RUN_OUT2JSON_DATA[$TF_RUN_OUT2JSON_LINE]//$'\e'\[*([0-9;])m/}"
 
-    __duct_msg d "$TF_RUN_OUT2JSON_TEXT"
-
     if [[ "$TF_RUN_OUT2JSON_TEXT" =~ $TF_RUN_OUT2JSON_MATCH ]]
     then
       local -a _REMATCH=( "${BASH_REMATCH[@]}" )
@@ -454,30 +452,6 @@ __duct_terraform_run_out2json() {
       fi
     fi
   done
-
-  #for TF_RUN_OUT2JSON_LINE in "${TF_RUN_OUT2JSON_DATA[@]}"
-  #do
-  #  # remove ANSI escape codes
-  #  TF_RUN_OUT2JSON_LINE="${TF_RUN_OUT2JSON_LINE//$'\e'\[*([0-9;])m/}"
-
-  #  __duct_msg d "$TF_RUN_OUT2JSON_LINE"
-
-  #  if [[ "$TF_RUN_OUT2JSON_LINE" =~ $TF_RUN_OUT2JSON_MATCH ]]
-  #  then
-  #    local -a _REMATCH=( "${BASH_REMATCH[@]}" )
-
-  #    if [[ "$TF_RUN_OUT2JSON_CMD" =~ (plan|apply) ]]
-  #    then
-  #      TF_RUN_OUT2JSON_INFO["create"]="${_REMATCH[-3]}"
-  #      TF_RUN_OUT2JSON_INFO["update"]="${_REMATCH[-2]}"
-  #      TF_RUN_OUT2JSON_INFO["delete"]="${_REMATCH[-1]}"
-
-  #    elif [[ "$TF_RUN_OUT2JSON_CMD" == "destroy" ]]
-  #    then
-  #      TF_RUN_OUT2JSON_INFO["delete"]="${_REMATCH[-1]}"
-  #    fi
-  #  fi
-  #done
 
   TF_RUN_OUT2JSON_JSON=(
     "{"
