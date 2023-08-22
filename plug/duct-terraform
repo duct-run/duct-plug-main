@@ -358,6 +358,7 @@ __duct_terraform_run_out2json() {
   local TF_RUN_OUT2JSON_FILE
   local TF_RUN_OUT2JSON_LINE
   local TF_RUN_OUT2JSON_MATCH
+  local TF_RUN_OUT2JSON_TEXT
 
   # defaults
   TF_RUN_OUT2JSON_INFO["create"]=0
@@ -426,20 +427,16 @@ __duct_terraform_run_out2json() {
     ;;
   esac
 
-  __duct_msg d "reading $TF_RUN_OUT2JSON_OUT"
-
   mapfile -t -n 0 TF_RUN_OUT2JSON_DATA < "$TF_RUN_OUT2JSON_OUT"
 
-  __duct_msg d "done"
-
-  for TF_RUN_OUT2JSON_LINE in "${TF_RUN_OUT2JSON_DATA[@]}"
+  for (( TF_RUN_OUT2JSON_LINE=${#TF_RUN_OUT2JSON_DATA[@]}-1; TF_RUN_OUT2JSON_LINE>=0; TF_RUN_OUT2JSON_LINE-- ))
   do
     # remove ANSI escape codes
-    TF_RUN_OUT2JSON_LINE="${TF_RUN_OUT2JSON_LINE//$'\e'\[*([0-9;])m/}"
+    TF_RUN_OUT2JSON_TEXT="${TF_RUN_OUT2JSON_DATA[$TF_RUN_OUT2JSON_LINE]//$'\e'\[*([0-9;])m/}"
 
-    __duct_msg d "$TF_RUN_OUT2JSON_LINE"
+    __duct_msg d "$TF_RUN_OUT2JSON_TEXT"
 
-    if [[ "$TF_RUN_OUT2JSON_LINE" =~ $TF_RUN_OUT2JSON_MATCH ]]
+    if [[ "$TF_RUN_OUT2JSON_TEXT" =~ $TF_RUN_OUT2JSON_MATCH ]]
     then
       local -a _REMATCH=( "${BASH_REMATCH[@]}" )
 
@@ -448,13 +445,39 @@ __duct_terraform_run_out2json() {
         TF_RUN_OUT2JSON_INFO["create"]="${_REMATCH[-3]}"
         TF_RUN_OUT2JSON_INFO["update"]="${_REMATCH[-2]}"
         TF_RUN_OUT2JSON_INFO["delete"]="${_REMATCH[-1]}"
+        break
 
       elif [[ "$TF_RUN_OUT2JSON_CMD" == "destroy" ]]
       then
         TF_RUN_OUT2JSON_INFO["delete"]="${_REMATCH[-1]}"
+        break
       fi
     fi
   done
+
+  #for TF_RUN_OUT2JSON_LINE in "${TF_RUN_OUT2JSON_DATA[@]}"
+  #do
+  #  # remove ANSI escape codes
+  #  TF_RUN_OUT2JSON_LINE="${TF_RUN_OUT2JSON_LINE//$'\e'\[*([0-9;])m/}"
+
+  #  __duct_msg d "$TF_RUN_OUT2JSON_LINE"
+
+  #  if [[ "$TF_RUN_OUT2JSON_LINE" =~ $TF_RUN_OUT2JSON_MATCH ]]
+  #  then
+  #    local -a _REMATCH=( "${BASH_REMATCH[@]}" )
+
+  #    if [[ "$TF_RUN_OUT2JSON_CMD" =~ (plan|apply) ]]
+  #    then
+  #      TF_RUN_OUT2JSON_INFO["create"]="${_REMATCH[-3]}"
+  #      TF_RUN_OUT2JSON_INFO["update"]="${_REMATCH[-2]}"
+  #      TF_RUN_OUT2JSON_INFO["delete"]="${_REMATCH[-1]}"
+
+  #    elif [[ "$TF_RUN_OUT2JSON_CMD" == "destroy" ]]
+  #    then
+  #      TF_RUN_OUT2JSON_INFO["delete"]="${_REMATCH[-1]}"
+  #    fi
+  #  fi
+  #done
 
   TF_RUN_OUT2JSON_JSON=(
     "{"
