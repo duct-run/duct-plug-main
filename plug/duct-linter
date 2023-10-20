@@ -28,6 +28,7 @@ declare -r -a _DUCT_LINTER_EDITORCONFIG_EXCLUDE=(
   '\.crt$'
   '\.csr$'
   '\.key$'
+  '\.out$'
   '\.pfx$'
 )
 
