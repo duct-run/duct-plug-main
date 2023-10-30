@@ -1,0 +1,166 @@
+# vim: set ft=sh syn=bash :
+# shellcheck shell=bash
+
+#
+# Copyright (C) 2022-2023 Chris 'sh0shin' Frage
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License, version 3,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+
+# @plug duct-pipx
+# @desc Install and Run Python Applications in Isolated Environments
+
+# @pvar
+DUCT_PIPX_HOME="${DUCT_PIPX_HOME:-"${HOME}/.local/pipx"}"
+
+# @pvar
+DUCT_PIPX_HOME_EXTRA="${DUCT_PIPX_HOME_EXTRA:-}"
+
+# @pvar
+DUCT_PIPX_BIN_DIR="${DUCT_PIPX_BIN_DIR:-"${HOME}/.local/bin"}"
+
+# @pvar
+DUCT_PIPX_BIN_DIR_HOME="${DUCT_PIPX_BIN_DIR_HOME:-false}"
+
+# @pvar
+DUCT_PIPX_USE_EMOJI="${DUCT_PIPX_USE_EMOJI:-false}"
+
+# @func duct pipx environment
+
+# @fvar
+DUCT_PIPX_ENVIRONMENT_SHOW="${DUCT_PIPX_ENVIRONMENT_SHOW:-false}"
+
+# @desc
+# @intl true
+# @life main
+# @deps duct-msg duct-run
+# @opts
+__duct_pipx_environment() {
+  local -g -x PIPX_HOME=
+  local -g -x PIPX_BIN_DIR=
+  local -g -x USE_EMOJI="$DUCT_PIPX_USE_EMOJI"
+
+  if [[ -n "$DUCT_PIPX_HOME_EXTRA" ]]
+  then
+    PIPX_HOME="${DUCT_PIPX_HOME}/${DUCT_PIPX_HOME_EXTRA}"
+
+
+    if [[ "$DUCT_PIPX_BIN_DIR_HOME" == true ]]
+    then
+      PIPX_BIN_DIR="${DUCT_PIPX_HOME}/${DUCT_PIPX_HOME_EXTRA}/bin"
+    fi
+  else
+    PIPX_HOME="$DUCT_PIPX_HOME"
+
+    if [[ "$DUCT_PIPX_BIN_DIR_HOME" == true ]]
+    then
+      PIPX_BIN_DIR="${DUCT_PIPX_HOME}/bin"
+    fi
+  fi
+
+  if [[ -z "$PIPX_BIN_DIR" ]]
+  then
+    PIPX_BIN_DIR="$DUCT_PIPX_BIN_DIR"
+  fi
+
+  __duct_msg d "PIPX_HOME=$PIPX_HOME"
+  __duct_msg d "PIPX_BIN_DIR=$PIPX_BIN_DIR"
+
+  if [[ "$DUCT_PIPX_ENVIRONMENT_SHOW" == true ]]
+  then
+    __duct_run pipx environment
+  fi
+}
+
+# @func duct pipx install
+
+# @fvar
+declare -r -a _DUCT_PIPX_INSTALL=()
+
+# @fvar
+declare -r -a _DUCT_PIPX_INSTALL_OPTIONS=(
+  --include-deps
+)
+
+# shellcheck disable=SC2206
+# @fvar
+declare -g -a DUCT_PIPX_INSTALL=( ${DUCT_PIPX_INSTALL[@]:-${_DUCT_PIPX_INSTALL[@]}} )
+
+# @fvar
+declare -g -a DUCT_PIPX_INSTALL_OPTIONS=( "${DUCT_PIPX_INSTALL_OPTIONS[@]:-${_DUCT_PIPX_INSTALL_OPTIONS[@]}}" )
+
+# @desc
+# @intl false
+# @life main
+# @deps duct-msg duct-run
+# @opts [package(s)]
+__duct_pipx_install() {
+  local -a PIPX_INSTALL=( "$@" )
+
+  if [[ "${#PIPX_INSTALL[@]}" -lt 1 ]]
+  then
+    echo "nothing to install!"
+    return 1
+  fi
+
+  local PIPX_PACKAGE_NAME="${PIPX_INSTALL[0]}"
+  unset "PIPX_INSTALL[0]"
+
+  __duct_pipx_environment
+
+  __duct_msg n "pipx install $PIPX_PACKAGE_NAME"
+  __duct_run pipx install "${DUCT_PIPX_INSTALL_OPTIONS[@]}" "$PIPX_PACKAGE_NAME"
+
+  __duct_pipx_inject "${PIPX_PACKAGE_NAME}" "${PIPX_INSTALL[@]}"
+}
+
+# @func duct pipx inject
+
+# @fvar
+declare -r -a _DUCT_PIPX_INJECT_OPTIONS=(
+  --include-apps
+  --include-deps
+)
+
+# @fvar
+declare -r -a _DUCT_PIPX_INJECT=()
+
+# shellcheck disable=SC2206
+# @fvar
+declare -g -a DUCT_PIPX_INJECT=( ${DUCT_PIPX_INJECT[@]:-${_DUCT_PIPX_INJECT[@]}} )
+
+# @fvar
+declare -g -a DUCT_PIPX_INJECT_OPTIONS=( "${DUCT_PIPX_INJECT_OPTIONS[@]:-${_DUCT_PIPX_INJECT_OPTIONS[@]}}" )
+
+# @fvar
+declare -g DUCT_PIPX_INJECT_PACKAGE_NAME="${DUCT_PIPX_INJECT_PACKAGE_NAME:-}"
+
+# @desc
+# @intl false
+# @life main
+# @deps duct-msg duct-run
+# @opts [package-name] [package(s)]
+__duct_pipx_inject() {
+  local PIPX_PACKAGE_NAME="${1:-$DUCT_PIPX_INJECT_PACKAGE_NAME}"
+  shift
+  # shellcheck disable=SC2206
+  local -a PIPX_INJECT=( ${@:-${DUCT_PIPX_INJECT[@]}} )
+
+  if [[ "${#PIPX_INJECT[@]}" -ge 1 ]]
+  then
+    __duct_pipx_environment
+
+    __duct_msg n "pipx inject $PIPX_PACKAGE_NAME ${PIPX_INJECT[*]}"
+    __duct_run pipx inject "${DUCT_PIPX_INJECT_OPTIONS[@]}"  "$PIPX_PACKAGE_NAME" "${PIPX_INJECT[@]}"
+  fi
+}
