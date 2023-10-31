@@ -82,6 +82,33 @@ __duct_pipx_environment() {
   fi
 }
 
+# @func duct pipx rfile
+
+# @desc
+# @intl true
+# @life main
+# @deps duct-msg duct-run
+# @opts <packages-file>
+__duct_pipx_rfile() {
+  local PIPX_FILE="${1:-}"
+
+  local -a PIPX_DATA
+  local PIPX_LINE
+
+  mapfile -t -n 0 PIPX_DATA < "$PIPX_FILE"
+
+  for PIPX_LINE in "${PIPX_DATA[@]}"
+  do
+    if [[ "$PIPX_LINE" =~ ^(#|$) ]]
+    then
+      continue
+    fi
+
+    printf "%b\n" "$PIPX_LINE"
+    PIPX_PACKAGE+=( "$PIPX_LINE" )
+  done
+}
+
 # @func duct pipx install
 
 # @fvar
@@ -103,9 +130,12 @@ declare -g -a DUCT_PIPX_INSTALL_OPTIONS=( "${DUCT_PIPX_INSTALL_OPTIONS[@]:-${_DU
 # @intl false
 # @life main
 # @deps duct-msg duct-run
-# @opts [package(s)]
+# @opts [package(s)|packages-file]
 __duct_pipx_install() {
-  local -a PIPX_INSTALL=( "$@" )
+  local -a PIPX_INSTALL=( "${@:-${DUCT_PIPX_INSTALL[@]}}" )
+
+  local -a PIPX_PACKAGES
+  local PIPX_PACKAGE_NAME
 
   if [[ "${#PIPX_INSTALL[@]}" -lt 1 ]]
   then
@@ -113,15 +143,24 @@ __duct_pipx_install() {
     return 1
   fi
 
-  local PIPX_PACKAGE_NAME="${PIPX_INSTALL[0]}"
-  unset "PIPX_INSTALL[0]"
+  if [[ -f "${PIPX_INSTALL[0]}" ]]
+  then
+    readarray -t -n 0 PIPX_PACKAGES < <( __duct_pipx_rfile "${PIPX_INSTALL[0]}" )
+    PIPX_PACKAGE_NAME="${PIPX_PACKAGES[0]}"
+    unset "PIPX_PACKAGES[0]"
+  else
+    PIPX_PACKAGE_NAME="${PIPX_INSTALL[0]}"
+    unset "PIPX_INSTALL[0]"
+    PIPX_PACKAGES=( "${PIPX_INSTALL[@]}" )
+  fi
 
   __duct_pipx_environment
 
-  __duct_msg n "pipx install $PIPX_PACKAGE_NAME"
+  __duct_msg n "pipx install ${PIPX_PACKAGE_NAME%%[~=]*}"
   __duct_run pipx install "${DUCT_PIPX_INSTALL_OPTIONS[@]}" "$PIPX_PACKAGE_NAME"
 
-  __duct_pipx_inject "${PIPX_PACKAGE_NAME}" "${PIPX_INSTALL[@]}"
+  PIPX_PACKAGE_NAME="${PIPX_PACKAGE_NAME%%[~=]*}"
+  __duct_pipx_inject "$PIPX_PACKAGE_NAME" "${PIPX_PACKAGES[@]}"
 }
 
 # @func duct pipx inject
