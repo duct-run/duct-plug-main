@@ -206,3 +206,21 @@ __duct_pipx_inject() {
     __duct_run "$DUCT_PIPX_BINARY" inject "${DUCT_PIPX_INJECT_OPTIONS[@]}"  "$PIPX_PACKAGE_NAME" "${PIPX_INJECT[@]}"
   fi
 }
+
+# @func duct pipx load
+
+# @fvar List of duct-git requirements.
+declare -r -a _DUCT_PIPX_LOAD_REQUIREMENTS=(
+  "$DUCT_PIPX_BINARY"
+)
+
+# @desc Check duct-pipx requirements
+# @intl true
+# @life main
+# @deps
+# @opts
+__duct_pipx_load() {
+  __duct_intl
+
+  __duct_bin_check "${_DUCT_PIPX_LOAD_REQUIREMENTS[@]}"
+}
