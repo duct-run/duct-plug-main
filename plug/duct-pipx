@@ -21,6 +21,9 @@
 # @desc Install and Run Python Applications in Isolated Environments
 
 # @pvar
+DUCT_PIPX_BINARY="${DUCT_PIPX_BINARY:-"pipx"}"
+
+# @pvar
 DUCT_PIPX_HOME="${DUCT_PIPX_HOME:-"${HOME}/.local/pipx"}"
 
 # @pvar
@@ -78,7 +81,7 @@ __duct_pipx_environment() {
 
   if [[ "$DUCT_PIPX_ENVIRONMENT_SHOW" == true ]]
   then
-    __duct_run pipx environment
+    __duct_run "$DUCT_PIPX_BINARY" environment
   fi
 }
 
@@ -156,8 +159,8 @@ __duct_pipx_install() {
 
   __duct_pipx_environment
 
-  __duct_msg n "pipx install ${PIPX_PACKAGE_NAME%%[~=]*}"
-  __duct_run pipx install "${DUCT_PIPX_INSTALL_OPTIONS[@]}" "$PIPX_PACKAGE_NAME"
+  __duct_msg n "$DUCT_PIPX_BINARY install ${PIPX_PACKAGE_NAME%%[~=]*}"
+  __duct_run "$DUCT_PIPX_BINARY" install "${DUCT_PIPX_INSTALL_OPTIONS[@]}" "$PIPX_PACKAGE_NAME"
 
   PIPX_PACKAGE_NAME="${PIPX_PACKAGE_NAME%%[~=]*}"
   __duct_pipx_inject "$PIPX_PACKAGE_NAME" "${PIPX_PACKAGES[@]}"
@@ -199,7 +202,7 @@ __duct_pipx_inject() {
   then
     __duct_pipx_environment
 
-    __duct_msg n "pipx inject $PIPX_PACKAGE_NAME ${PIPX_INJECT[*]}"
-    __duct_run pipx inject "${DUCT_PIPX_INJECT_OPTIONS[@]}"  "$PIPX_PACKAGE_NAME" "${PIPX_INJECT[@]}"
+    __duct_msg n "$DUCT_PIPX_BINARY inject $PIPX_PACKAGE_NAME ${PIPX_INJECT[*]}"
+    __duct_run "$DUCT_PIPX_BINARY" inject "${DUCT_PIPX_INJECT_OPTIONS[@]}"  "$PIPX_PACKAGE_NAME" "${PIPX_INJECT[@]}"
   fi
 }
