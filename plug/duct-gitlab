@@ -206,7 +206,7 @@ readonly -f __duct_gitlab_paginate
 # intl: false
 # life: main
 # desc: Return GitLab projects clone-url or ID.
-# opts: <ssh|http|id> [search] [filter]
+# opts: <ssh|http|id|jq-query> [search] [filter]
 __duct_gitlab_projects() {
   local GL_RETURN="${1:-"http"}"
   local GL_SEARCH="${2:-""}"
@@ -227,8 +227,7 @@ __duct_gitlab_projects() {
       GL_API_JQ='.[] | (.id|tostring) + ":" + .path_with_namespace'
     ;;
     *)
-      __duct_msg e "$GL_RETURN unknown!"
-      return 1
+      GL_API_JQ="$GL_RETURN"
     ;;
   esac
 
