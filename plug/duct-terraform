@@ -166,9 +166,7 @@ __duct_terraform_config() {
         done
       fi
 
-      #printf "%b\n" "${TF_CONFIG[@]}" | __duct_run "$DUCT_TERRAFORM_RUN_TERRAFORM_BINARY" fmt - > "$DUCT_TERRAFORM_CONFIG_FILE"
-      printf "%s\n" "${TF_CONFIG[@]}" > "$DUCT_TERRAFORM_CONFIG_FILE"
-
+      printf "%b\n" "${TF_CONFIG[@]}" | __duct_run "$DUCT_TERRAFORM_RUN_TERRAFORM_BINARY" fmt - > "$DUCT_TERRAFORM_CONFIG_FILE"
       _DUCT_TERRAFORM_CONFIG_DONE=true
     fi
   else
