@@ -1085,7 +1085,7 @@ __duct_terraform_tfsec() {
   local -a TF_TFSEC_FORMAT=( --format="$DUCT_TERRAFORM_TFSEC_FORMAT" )
 
   DUCT_TERRAFORM_INIT_RECURSIVE=true \
-     __duct_terraform_init -backend=false
+    __duct_terraform_init -backend=false
 
   if [[ -n "$DUCT_TERRAFORM_TFSEC_FORMAT_FILE" ]]
   then

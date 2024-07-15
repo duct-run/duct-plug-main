@@ -375,15 +375,15 @@ __duct_gitlab_milestone() {
     if [[ "$MILESTONE_GROUP" -eq 1 ]]
     then
       MILESTONE_SEND="$( __duct_gitlab_curl --request POST \
-                         --header "Content-Type: application/json" \
-                         --data "$MILESTONE_DATA" \
-                         "${DUCT_GITLAB_API}/groups/${DUCT_GITLAB_MILESTONE_GROUP_ID}/milestones" )"
+                          --header "Content-Type: application/json" \
+                          --data "$MILESTONE_DATA" \
+                          "${DUCT_GITLAB_API}/groups/${DUCT_GITLAB_MILESTONE_GROUP_ID}/milestones" )"
     elif [[ "$MILESTONE_PROJECT" -eq 1 ]]
     then
       MILESTONE_SEND="$( __duct_gitlab_curl --request POST \
-                         --header "Content-Type: application/json" \
-                         --data "$MILESTONE_DATA" \
-                         "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_PROJECT_ID}/milestones" )"
+                          --header "Content-Type: application/json" \
+                          --data "$MILESTONE_DATA" \
+                          "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_PROJECT_ID}/milestones" )"
     fi
 
     MILESTONE_ID="$( jq -r '.id' <<< "$MILESTONE_SEND" )"
@@ -488,9 +488,9 @@ __duct_gitlab_issue() {
   done
 
   ISSUE_SEND="$( __duct_gitlab_curl --request POST \
-                 --header "Content-Type: application/json" \
-                 --data "$ISSUE_DATA" \
-                 "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_ISSUE_PROJECT_ID}/issues" )"
+                  --header "Content-Type: application/json" \
+                  --data "$ISSUE_DATA" \
+                  "${DUCT_GITLAB_API}/projects/${DUCT_GITLAB_ISSUE_PROJECT_ID}/issues" )"
 
   ISSUE_IID="$( echo "$ISSUE_SEND" | jq -r '.iid' )"
   ISSUE_URL="$( echo "$ISSUE_SEND" | jq -r '.web_url' )"

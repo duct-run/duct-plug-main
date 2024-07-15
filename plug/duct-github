@@ -270,6 +270,6 @@ __duct_github_install() {
     return $GH_RC
   fi
 
- __duct_unpack "${DUCT_GITHUB_INSTALL_TMPDIR}/${GH_ASSET}" "$DUCT_GITHUB_INSTALL_DIR" "$DUCT_GITHUB_INSTALL_MODE" "${DUCT_GITHUB_INSTALL_FILE_MAP[@]}"
+  __duct_unpack "${DUCT_GITHUB_INSTALL_TMPDIR}/${GH_ASSET}" "$DUCT_GITHUB_INSTALL_DIR" "$DUCT_GITHUB_INSTALL_MODE" "${DUCT_GITHUB_INSTALL_FILE_MAP[@]}"
 }
 readonly -f __duct_github_install
