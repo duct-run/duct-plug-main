@@ -1205,7 +1205,7 @@ declare -r -a _DUCT_GIT_CHECK_SCOPE=(
 # Allowed conventional commit description (defaults).
 declare -r -a _DUCT_GIT_CHECK_DESC=(
   "[:digit:]"
-  "[:lower:]"
+  "[:alpha:]"
   "[:punct:]"
   "[:space:]"
 )
@@ -1223,7 +1223,7 @@ declare -g -a DUCT_GIT_CHECK_SCOPE=( "${DUCT_GIT_CHECK_SCOPE[@]:-${_DUCT_GIT_CHE
 declare -g -a DUCT_GIT_CHECK_DESC=( "${DUCT_GIT_CHECK_DESC[@]:-${_DUCT_GIT_CHECK_DESC[@]}}" )
 
 # Minimal length of conventional commit scope.
-declare -g -i DUCT_GIT_CHECK_SCOPE_MIN=${DUCT_GIT_CHECK_SCOPE_MIN:-5}
+declare -g -i DUCT_GIT_CHECK_SCOPE_MIN=${DUCT_GIT_CHECK_SCOPE_MIN:-1}
 
 # Maximal length of conventional commit scope.
 declare -g -i DUCT_GIT_CHECK_SCOPE_MAX=${DUCT_GIT_CHECK_SCOPE_MAX:-75}
