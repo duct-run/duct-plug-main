@@ -979,8 +979,7 @@ __duct_terraform_state_rm() {
 
   local TF_STATE_RM_ITEM
 
-  # shellcheck disable=SC2068
-  for TF_STATE_RM_ITEM in $@
+  for TF_STATE_RM_ITEM in "$@"
   do
     # options
     if [[ "$TF_STATE_RM_ITEM" =~ ^(-) ]]
