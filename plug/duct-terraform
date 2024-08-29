@@ -44,6 +44,8 @@ declare -r -a _DUCT_TERRAFORM_CONFIG_OPTIONS=(
 )
 
 declare -r -a _DUCT_TERRAFORM_CONFIG_CREDENTIALS=()
+declare -r -a _DUCT_TERRAFORM_CONFIG_NETWORK_MIRRORS=()
+declare -r -a _DUCT_TERRAFORM_CONFIG_DIRECT_EXCLUDES=()
 
 declare -g _DUCT_TERRAFORM_CONFIG_DONE="${_DUCT_TERRAFORM_CONFIG_DONE:-false}"
 
@@ -59,6 +61,12 @@ declare -g DUCT_TERRAFORM_CONFIG_REPLACE="${DUCT_TERRAFORM_CONFIG_REPLACE:-true}
 
 declare -g DUCT_TERRAFORM_CONFIG_NETWORK_MIRROR="${DUCT_TERRAFORM_CONFIG_NETWORK_MIRROR:-}"
 
+# shellcheck disable=SC2206
+declare -g -a DUCT_TERRAFORM_CONFIG_NETWORK_MIRRORS=( ${DUCT_TERRAFORM_CONFIG_NETWORK_MIRRORS[@]:-${_DUCT_TERRAFORM_CONFIG_NETWORK_MIRRORS[@]}} )
+
+# shellcheck disable=SC2206
+declare -g -a DUCT_TERRAFORM_CONFIG_DIRECT_EXCLUDES=( ${DUCT_TERRAFORM_CONFIG_DIRECT_EXCLUDES[@]:-${_DUCT_TERRAFORM_CONFIG_DIRECT_EXCLUDES[@]}} )
+
 # @desc
 # @intl false
 # @life main
@@ -72,6 +80,7 @@ __duct_terraform_config() {
   local TF_CONFIG_VAL
 
   local TF_CONFIG_CACHE
+  local TF_CONFIG_ITEM
 
   if [[ "${#DUCT_TERRAFORM_CONFIG_OPTIONS}" -ge 1 ]]
   then
@@ -135,7 +144,51 @@ __duct_terraform_config() {
         fi
       done
 
-      if [[ -n "$DUCT_TERRAFORM_CONFIG_NETWORK_MIRROR" ]]
+      if [[ "${#DUCT_TERRAFORM_CONFIG_NETWORK_MIRRORS[@]}" -gt 0 ]]
+      then
+        TF_CONFIG+=(
+          'provider_installation {'
+        )
+
+        for TF_CONFIG_ITEM in "${DUCT_TERRAFORM_CONFIG_NETWORK_MIRRORS[@]}"
+        do
+          __duct_msg d "add network mirror $TF_CONFIG_ITEM"
+
+          TF_CONFIG+=(
+            'network_mirror {'
+            "url=\"$TF_CONFIG_ITEM\""
+            '}'
+          )
+        done
+
+        if [[ "${#DUCT_TERRAFORM_CONFIG_DIRECT_EXCLUDES[@]}" -gt 0 ]]
+        then
+
+          TF_CONFIG+=(
+            'direct {'
+            'exclude = ['
+          )
+
+          for TF_CONFIG_ITEM in "${DUCT_TERRAFORM_CONFIG_DIRECT_EXCLUDES[@]}"
+          do
+            __duct_msg d "add direct exclude $TF_CONFIG_ITEM"
+
+            TF_CONFIG+=(
+              "\"$TF_CONFIG_ITEM\","
+            )
+          done
+
+          TF_CONFIG+=(
+            ']'
+            '}'
+          )
+        fi
+
+        TF_CONFIG+=(
+          '}'
+        )
+
+      elif [[ -n "$DUCT_TERRAFORM_CONFIG_NETWORK_MIRROR" ]]
       then
         __duct_msg d "add network mirror $DUCT_TERRAFORM_CONFIG_NETWORK_MIRROR"
 
