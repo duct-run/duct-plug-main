@@ -937,6 +937,47 @@ __duct_terraform_import() {
   done
 }
 
+# @func duct terraform output
+
+declare -r -a _DUCT_TERRAFORM_OUTPUT_OPTIONS=()
+
+# shellcheck disable=SC2206
+declare -g -a DUCT_TERRAFORM_OUTPUT_OPTIONS=( ${DUCT_TERRAFORM_OUTPUT_OPTIONS[@]:-${_DUCT_TERRAFORM_OUTPUT_OPTIONS[@]}} )
+
+# @desc
+# @intl
+# @life
+# @deps
+# @opts [output-options] [name]
+__duct_terraform_output() {
+  local -a TF_OUTPUT_OPTS
+  local -a TF_OUTPUT_RSCR=()
+  local TF_OUTPUT_ITEM
+
+  IFS=" " read -r -a TF_OUTPUT_OPTS <<< "$@"
+
+  for TF_OUTPUT_ITEM in "${!TF_OUTPUT_OPTS[@]}"
+  do
+    if [[ ! "${TF_OUTPUT_OPTS[TF_OUTPUT_ITEM]}" =~ ^(-) ]]
+    then
+      TF_OUTPUT_RSCR+=( "${TF_OUTPUT_OPTS[TF_OUTPUT_ITEM]}" )
+      unset "TF_OUTPUT_OPTS[TF_OUTPUT_ITEM]"
+    fi
+  done
+
+  if [[ ${#TF_OUTPUT_RSCR[@]} -gt 0 ]]
+  then
+    for TF_OUTPUT_ITEM in "${TF_OUTPUT_RSCR[@]}"
+    do
+      __duct_terraform_init
+      __duct_terraform_run output "${DUCT_TERRAFORM_OUTPUT_OPTIONS[@]}" "${TF_OUTPUT_OPTS[@]}" "$TF_OUTPUT_ITEM"
+    done
+  else
+    __duct_terraform_init
+    __duct_terraform_run output "${DUCT_TERRAFORM_OUTPUT_OPTIONS[@]}" "${TF_OUTPUT_OPTS[@]}"
+  fi
+}
+
 # @func duct terraform state list
 
 declare -r -a _DUCT_TERRAFORM_STATE_LIST_OPTIONS=()
