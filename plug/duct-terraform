@@ -456,6 +456,26 @@ __duct_terraform_run_out2json() {
       TF_RUN_OUT2JSON_MATCH='(Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy.)'
       TF_RUN_OUT2JSON_FILE="$DUCT_TERRAFORM_PLAN_TARGET_JSON_FILE"
     ;;
+    plan-replace)
+      if [[ "$DUCT_TERRAFORM_PLAN_REPLACE_JSON" != true ]]
+      then
+        return
+      fi
+
+      TF_RUN_OUT2JSON_MATCH='(Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy.)'
+      TF_RUN_OUT2JSON_FILE="$DUCT_TERRAFORM_PLAN_REPLACE_JSON_FILE"
+    ;;
+    plan-destroy-target)
+      if [[ "$DUCT_TERRAFORM_PLAN_DESTROY_TARGET_JSON" != true ]]
+      then
+        return
+      fi
+
+      TF_RUN_OUT2JSON_MATCH='(Plan: ([0-9]+) to add, ([0-9]+) to change, ([0-9]+) to destroy.)'
+      TF_RUN_OUT2JSON_FILE="$DUCT_TERRAFORM_PLAN_DESTROY_TARGET_JSON_FILE"
+    ;;
+
+
 
     apply)
       if [[ "$DUCT_TERRAFORM_APPLY_JSON" != true ]]
@@ -474,6 +494,34 @@ __duct_terraform_run_out2json() {
 
       TF_RUN_OUT2JSON_MATCH='(Apply complete! Resources: ([0-9]+) added, ([0-9]+) changed, ([0-9]+) destroyed.)'
       TF_RUN_OUT2JSON_FILE="$DUCT_TERRAFORM_APPLY_DESTROY_JSON_FILE"
+    ;;
+    apply-destroy-target)
+      if [[ "$DUCT_TERRAFORM_APPLY_DESTROY_TARGET_JSON" != true ]]
+      then
+        return
+      fi
+
+      TF_RUN_OUT2JSON_MATCH='(Apply complete! Resources: ([0-9]+) added, ([0-9]+) changed, ([0-9]+) destroyed.)'
+      TF_RUN_OUT2JSON_FILE="$DUCT_TERRAFORM_APPLY_DESTROY_TARGET_JSON_FILE"
+    ;;
+    apply-target)
+      if [[ "$DUCT_TERRAFORM_APPLY_TARGET_JSON" != true ]]
+      then
+        return
+      fi
+
+      TF_RUN_OUT2JSON_MATCH='(Apply complete! Resources: ([0-9]+) added, ([0-9]+) changed, ([0-9]+) destroyed.)'
+      TF_RUN_OUT2JSON_FILE="$DUCT_TERRAFORM_APPLY_TARGET_JSON_FILE"
+    ;;
+
+    apply-replace)
+      if [[ "$DUCT_TERRAFORM_APPLY_REPLACE_JSON" != true ]]
+      then
+        return
+      fi
+
+      TF_RUN_OUT2JSON_MATCH='(Apply complete! Resources: ([0-9]+) added, ([0-9]+) changed, ([0-9]+) destroyed.)'
+      TF_RUN_OUT2JSON_FILE="$DUCT_TERRAFORM_APPLY_REPLACE_JSON_FILE"
     ;;
     destroy)
       if [[ "$DUCT_TERRAFORM_DESTROY_JSON" != true ]]
@@ -756,6 +804,8 @@ declare -g DUCT_TERRAFORM_PLAN_REPLACE_JSON="${DUCT_TERRAFORM_PLAN_REPLACE_JSON:
 declare -g DUCT_TERRAFORM_PLAN_REPLACE_JSON_FILE="${DUCT_TERRAFORM_PLAN_REPLACE_JSON_FILE:-"terraform-plan-replace.json"}"
 declare -g DUCT_TERRAFORM_PLAN_TARGET_JSON="${DUCT_TERRAFORM_PLAN_TARGET_JSON:-true}"
 declare -g DUCT_TERRAFORM_PLAN_TARGET_JSON_FILE="${DUCT_TERRAFORM_PLAN_TARGET_JSON_FILE:-"terraform-plan-target.json"}"
+declare -g DUCT_TERRAFORM_PLAN_DESTROY_TARGET_JSON="${DUCT_TERRAFORM_PLAN_DESTROY_TARGET_JSON:-true}"
+declare -g DUCT_TERRAFORM_PLAN_DESTROY_TARGET_JSON_FILE="${DUCT_TERRAFORM_PLAN_DESTROY_TARGET_JSON_FILE:-"terraform-plan-destroy-target.json"}"
 
 # @desc
 # @intl
@@ -797,6 +847,8 @@ declare -g DUCT_TERRAFORM_APPLY_REPLACE_JSON="${DUCT_TERRAFORM_APPLY_REPLACE_JSO
 declare -g DUCT_TERRAFORM_APPLY_REPLACE_JSON_FILE="${DUCT_TERRAFORM_APPLY_REPLACE_JSON_FILE:-"terraform-apply-replace.json"}"
 declare -g DUCT_TERRAFORM_APPLY_TARGET_JSON="${DUCT_TERRAFORM_APPLY_TARGET_JSON:-true}"
 declare -g DUCT_TERRAFORM_APPLY_TARGET_JSON_FILE="${DUCT_TERRAFORM_APPLY_TARGET_JSON_FILE:-"terraform-apply-target.json"}"
+declare -g DUCT_TERRAFORM_APPLY_DESTROY_TARGET_JSON="${DUCT_TERRAFORM_APPLY_DESTROY_TARGET_JSON:-true}"
+declare -g DUCT_TERRAFORM_APPLY_DESTROY_TARGET_JSON_FILE="${DUCT_TERRAFORM_APPLY_DESTROY_TARGET_JSON_FILE:-"terraform-apply-destroy-target.json"}"
 
 declare -g DUCT_TERRAFORM_APPLY_REMOVE_PLAN="${DUCT_TERRAFORM_APPLY_REMOVE_PLAN:-true}"
 declare -g DUCT_TERRAFORM_APPLY_USE_PLAN="${DUCT_TERRAFORM_APPLY_USE_PLAN:-true}"
