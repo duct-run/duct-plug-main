@@ -1184,6 +1184,7 @@ declare -r -a _DUCT_GIT_CHECK_TYPE=(
   "feat"
   "fix"
   "import"
+  "init"
   "merge"
   "perf"
   "refactor"
