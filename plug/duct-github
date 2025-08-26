@@ -142,7 +142,8 @@ __duct_github_latest() {
     _HOSTTYPE_COMMON="($( __duct_array_join "DUCT_HOSTTYPE_COMMON" "|" ))"
     for GH_REL_ASSET in "${GH_REL_ASSETS[@]}"
     do
-      if [[ "$GH_REL_ASSET" =~ \.(pem|json|sig|txt|sum|gpg|sha[1-9]+)$ ]]
+      #if [[ "$GH_REL_ASSET" =~ \.(pem|json|sig|txt|sum|gpg|sha[1-9]+|gpgsig|asc|rpm)$ ]]
+      if [[ ! "${GH_REL_ASSET##*/}" =~ (^[^\.]*$|\.(tar(\.(gz|xz))?|zip)$) ]]
       then
         continue
       fi
@@ -270,6 +271,6 @@ __duct_github_install() {
     return $GH_RC
   fi
 
- __duct_unpack "${DUCT_GITHUB_INSTALL_TMPDIR}/${GH_ASSET}" "$DUCT_GITHUB_INSTALL_DIR" "$DUCT_GITHUB_INSTALL_MODE" "${DUCT_GITHUB_INSTALL_FILE_MAP[@]}"
+  __duct_unpack "${DUCT_GITHUB_INSTALL_TMPDIR}/${GH_ASSET}" "$DUCT_GITHUB_INSTALL_DIR" "$DUCT_GITHUB_INSTALL_MODE" "${DUCT_GITHUB_INSTALL_FILE_MAP[@]}"
 }
 readonly -f __duct_github_install
