@@ -823,9 +823,9 @@ __duct_git_tag_list() {
 
   if [[ "$DUCT_GIT_TAG_LIST_ANNOTATION" -ge 1 ]]
   then
-    GIT_OPTS=( --format="%(refname:lstrip=2) %(contents:lines=$DUCT_GIT_TAG_LIST_ANNOTATION)" )
+    GIT_OPTS=( --format="%(refname:lstrip=2) %(contents:lines=$DUCT_GIT_TAG_LIST_ANNOTATION)" --sort="v:refname" )
   else
-    GIT_OPTS=( --format="%(refname:lstrip=2)" )
+    GIT_OPTS=( --format="%(refname:lstrip=2)" --sort="v:refname" )
   fi
 
   if [[ "$DUCT_GIT_TAG_LIST_SEARCH" == "latest" ]]
@@ -868,6 +868,8 @@ __duct_git_tag_list() {
 # opts:
 __duct_git_strip_remote() {
   local GIT_REMOTE
+  local GIT_INCLUDE
+  local GIT_URL
 
   if [[ ! -d .git ]]
   then
@@ -875,18 +877,27 @@ __duct_git_strip_remote() {
     exit 1
   fi
 
-  GIT_REMOTE=$( git remote get-url --push "$DUCT_GIT_REMOTE" )
+  GIT_REMOTE="$( git remote get-url --all "$DUCT_GIT_REMOTE" )"
+  GIT_INCLUDE="$( git config get include.path || : )"
 
-  if [[ ! "$GIT_REMOTE" =~ https:// ]]
+  if [[ "$GIT_REMOTE" =~ ^((https://)([[:alnum:][:punct:]]+):([[:alnum:][:punct:]]+)@(.*)) ]]
   then
-    __duct_msg w "not a https remote url, skipping!"
-    return 0
+    GIT_REMOTE="${BASH_REMATCH[2]}${BASH_REMATCH[5]}"
+
+    __duct_msg n "setting remote $DUCT_GIT_REMOTE to $GIT_REMOTE"
+    __duct_run git remote set-url "$DUCT_GIT_REMOTE" "$GIT_REMOTE"
   fi
 
-  GIT_REMOTE="$( __duct_gnu_sed -e "s?\(https://\)\(.*\)@\(.*\)?\1\3?g" <<< "$GIT_REMOTE" )"
+  # fixes gitlab >= 18.9
+  if [[ "$GIT_INCLUDE" =~ gitlab-runner ]]
+  then
+    __duct_msg n "removing url insteadof from $GIT_INCLUDE"
 
-  __duct_msg n "setting remote $DUCT_GIT_REMOTE to $GIT_REMOTE"
-  __duct_run git remote set-url "$DUCT_GIT_REMOTE" "$GIT_REMOTE"
+    for GIT_URL in $( __duct_run git config --name-only --get-regexp '^url\.' || : )
+    do
+      __duct_run git config --file "$GIT_INCLUDE" --unset-all "$GIT_URL"
+    done
+  fi
 }
 
 # git cvc check
@@ -1184,6 +1195,7 @@ declare -r -a _DUCT_GIT_CHECK_TYPE=(
   "feat"
   "fix"
   "import"
+  "init"
   "merge"
   "perf"
   "refactor"
@@ -1205,7 +1217,7 @@ declare -r -a _DUCT_GIT_CHECK_SCOPE=(
 # Allowed conventional commit description (defaults).
 declare -r -a _DUCT_GIT_CHECK_DESC=(
   "[:digit:]"
-  "[:lower:]"
+  "[:alpha:]"
   "[:punct:]"
   "[:space:]"
 )
@@ -1223,7 +1235,7 @@ declare -g -a DUCT_GIT_CHECK_SCOPE=( "${DUCT_GIT_CHECK_SCOPE[@]:-${_DUCT_GIT_CHE
 declare -g -a DUCT_GIT_CHECK_DESC=( "${DUCT_GIT_CHECK_DESC[@]:-${_DUCT_GIT_CHECK_DESC[@]}}" )
 
 # Minimal length of conventional commit scope.
-declare -g -i DUCT_GIT_CHECK_SCOPE_MIN=${DUCT_GIT_CHECK_SCOPE_MIN:-5}
+declare -g -i DUCT_GIT_CHECK_SCOPE_MIN=${DUCT_GIT_CHECK_SCOPE_MIN:-1}
 
 # Maximal length of conventional commit scope.
 declare -g -i DUCT_GIT_CHECK_SCOPE_MAX=${DUCT_GIT_CHECK_SCOPE_MAX:-75}
